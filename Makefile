@@ -2,7 +2,7 @@
 # This Makefile builds all services except sv2-apps
 
 # Define all service directories (excluding sv2-apps)
-SERVICES := job-declaration-client job-declaration-server pool template-provider translator
+SERVICES := job-declaration-client job-declaration-server pool translator
 
 # Color output for better visibility
 GREEN := \033[1;32m
