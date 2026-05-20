@@ -24,8 +24,16 @@ const shape = object({
   // Aggregate channels: if true, all miners share one upstream channel; if false, each miner gets its own channel
   aggregate_channels: boolean,
 
-  // Optional Log File
-  log_file: literal('./tproxy.log').onMismatch('./tproxy.log'),
+  // Optional log file path. Omitted from TOML when undefined to disable file logging.
+  log_file: string.optional().onMismatch(undefined),
+
+  // SV2 protocol extensions advertised/required to the upstream
+  supported_extensions: array(number),
+  required_extensions: array(number),
+
+  // Optional Prometheus monitoring endpoint. Both keys omitted from TOML when undefined.
+  monitoring_address: string.optional().onMismatch(undefined),
+  monitoring_cache_refresh_secs: number.optional().onMismatch(undefined),
 
   // Downstream Difficulty Configuration
   downstream_difficulty_config: object({
@@ -33,6 +41,8 @@ const shape = object({
     shares_per_minute: number,
     // Enable variable difficulty adjustment (true by default, set to false when using with JDC)
     enable_vardiff: boolean,
+    // Interval at which keepalive jobs are emitted to downstream miners
+    job_keepalive_interval_secs: number,
   }),
 
   // Upstream SV2 Pool/JDC Connections (array of upstreams for failover support)

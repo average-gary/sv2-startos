@@ -27,20 +27,29 @@ export const versionGraph = VersionGraph.of({
         // Channel Aggregation
         aggregate_channels: true,
 
-        // Log File
-        log_file: './tproxy.log',
+        // Log File (omitted from TOML; user can opt in via setConfig)
+        log_file: undefined,
+
+        // SV2 Extension Negotiation
+        supported_extensions: [],
+        required_extensions: [],
+
+        // Monitoring (omitted from TOML until user opts in)
+        monitoring_address: undefined,
+        monitoring_cache_refresh_secs: undefined,
 
         // Downstream Difficulty Configuration
         downstream_difficulty_config: {
           min_individual_miner_hashrate: 10000000000000,
           shares_per_minute: 6.0,
           enable_vardiff: true,
+          job_keepalive_interval_secs: 60,
         },
 
         // Upstream SV2 Pool/JDC Connections
         upstreams: [
           {
-            address: '75.119.150.111',
+            address: '',
             port: 34254,
             authority_pubkey:
               '9auqWEzQDVyd2oe1JVGFLMLHZtCo2FFqZwtKA5gd9xbuEu7PH72',
