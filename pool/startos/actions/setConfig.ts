@@ -92,10 +92,43 @@ export const inputSpec = InputSpec.of({
     units: 'shares',
   }),
 
+  template_provider_mode: Value.select({
+    name: 'Template Provider Mode',
+    description:
+      'How the pool obtains block templates. BitcoinCoreIpc connects directly to a local Bitcoin Core node via its IPC socket. Sv2Tp connects to a remote Stratum V2 Template Provider over TCP.',
+    default: 'bitcoin_core_ipc' as const,
+    values: {
+      bitcoin_core_ipc: 'Bitcoin Core IPC (local)',
+      sv2_tp: 'Sv2 Template Provider (remote)',
+    },
+  }),
+
+  bitcoin_core_network: Value.select({
+    name: 'Bitcoin Network',
+    description:
+      'Bitcoin network used by the local Bitcoin Core node (only used in Bitcoin Core IPC mode).',
+    default: 'mainnet' as const,
+    values: {
+      mainnet: 'Mainnet',
+      testnet4: 'Testnet4',
+      signet: 'Signet',
+      regtest: 'Regtest',
+    },
+  }),
+
+  bitcoin_core_data_dir: Value.text({
+    name: 'Bitcoin Core Data Dir Override',
+    description:
+      'Optional override for the Bitcoin Core data directory used to resolve the IPC socket path. Leave blank to use the default mounted at /ipc.',
+    required: false,
+    default: null,
+    placeholder: '/ipc',
+  }),
+
   fee_threshold: Value.number({
     name: 'Fee Threshold',
     description:
-      'Minimum fee threshold for transaction inclusion in templates. When mempool fees exceed this threshold, a new block template is generated.',
+      'Minimum fee threshold for transaction inclusion in templates. When mempool fees exceed this threshold, a new block template is generated. (Bitcoin Core IPC mode only.)',
     required: true,
     default: 100,
     integer: true,
@@ -106,12 +139,73 @@ export const inputSpec = InputSpec.of({
   min_interval: Value.number({
     name: 'Minimum Interval',
     description:
-      'Minimum time between template updates from Bitcoin Core',
+      'Minimum time between template updates from Bitcoin Core. (Bitcoin Core IPC mode only.)',
     required: true,
     default: 5,
     integer: true,
     min: 1,
     max: 60,
+    units: 'seconds',
+  }),
+
+  sv2_tp_address: Value.text({
+    name: 'Sv2 Template Provider Address',
+    description:
+      'TCP host:port of the upstream Sv2 Template Provider. (Sv2Tp mode only.)',
+    required: true,
+    default: '127.0.0.1:8442',
+    placeholder: '127.0.0.1:8442',
+  }),
+
+  sv2_tp_public_key: Value.text({
+    name: 'Sv2 Template Provider Public Key',
+    description:
+      'Optional Noise authority public key of the upstream Template Provider. (Sv2Tp mode only.)',
+    required: false,
+    default: null,
+  }),
+
+  enable_jds: Value.toggle({
+    name: 'Enable Embedded Job Declarator Server',
+    description:
+      'Run the embedded Job Declarator Server (JDS) alongside the pool. Required if you want to allow connections from Job Declarator Clients.',
+    default: true,
+  }),
+
+  jds_listen_address: Value.text({
+    name: 'JDS Listen Address',
+    description:
+      'host:port the embedded Job Declarator Server listens on. (Only used when JDS is enabled.)',
+    required: true,
+    default: '0.0.0.0:34264',
+    placeholder: '0.0.0.0:34264',
+  }),
+
+  monitoring_enabled: Value.toggle({
+    name: 'Enable Monitoring Endpoint',
+    description:
+      'Expose a Prometheus-style monitoring endpoint for the pool service.',
+    default: false,
+  }),
+
+  monitoring_address: Value.text({
+    name: 'Monitoring Address',
+    description:
+      'host:port for the monitoring endpoint. (Only used when monitoring is enabled.)',
+    required: false,
+    default: '127.0.0.1:9090',
+    placeholder: '127.0.0.1:9090',
+  }),
+
+  monitoring_cache_refresh_secs: Value.number({
+    name: 'Monitoring Cache Refresh',
+    description:
+      'How often the monitoring endpoint refreshes its cached metrics. (Only used when monitoring is enabled.)',
+    required: false,
+    default: 15,
+    integer: true,
+    min: 1,
+    max: 3600,
     units: 'seconds',
   }),
 })
@@ -122,7 +216,7 @@ export const setConfig = sdk.Action.withInput(
   async ({ effects }) => ({
     name: 'Configure Pool',
     description:
-      'Configure Pioneer Hash SV2 Pool settings including mining rewards and Bitcoin Core IPC connection',
+      'Configure Pioneer Hash SV2 Pool settings including mining rewards, template provider mode, and embedded JDS',
     warning: null,
     allowedStatuses: 'any',
     group: null,
@@ -160,8 +254,19 @@ export const setConfig = sdk.Action.withInput(
       pool_signature: config.pool_signature,
       shares_per_minute: config.shares_per_minute,
       share_batch_size: config.share_batch_size,
-      fee_threshold: config.bitcoin_fee_threshold || 100,
-      min_interval: config.bitcoin_min_interval || 5,
+      template_provider_mode: config.template_provider.mode,
+      bitcoin_core_network: config.template_provider.bitcoin_core_ipc.network,
+      bitcoin_core_data_dir:
+        config.template_provider.bitcoin_core_ipc.data_dir || null,
+      fee_threshold: config.template_provider.bitcoin_core_ipc.fee_threshold,
+      min_interval: config.template_provider.bitcoin_core_ipc.min_interval,
+      sv2_tp_address: config.template_provider.sv2_tp.address,
+      sv2_tp_public_key: config.template_provider.sv2_tp.public_key || null,
+      enable_jds: config.jds.enabled,
+      jds_listen_address: config.jds.listen_address,
+      monitoring_enabled: config.monitoring.enabled,
+      monitoring_address: config.monitoring.address || null,
+      monitoring_cache_refresh_secs: config.monitoring.cache_refresh_secs,
     }
   },
 
@@ -174,14 +279,35 @@ export const setConfig = sdk.Action.withInput(
       coinbase_reward_script: `addr(${input.coinbase_reward_address})`,
       server_id: input.server_id,
       pool_signature: input.pool_signature,
-      log_file: './pool.log',
+      log_file: '',
       shares_per_minute: input.shares_per_minute,
       share_batch_size: input.share_batch_size,
-      supported_extensions: JSON.stringify([]),
-      required_extensions: JSON.stringify([]),
-      bitcoin_ipc_socket: '/root/.bitcoin/ipc/bitcoin-core.sock',
-      bitcoin_fee_threshold: input.fee_threshold,
-      bitcoin_min_interval: input.min_interval,
+      supported_extensions: [],
+      required_extensions: [],
+      template_provider: {
+        mode: input.template_provider_mode,
+        bitcoin_core_ipc: {
+          network: input.bitcoin_core_network,
+          data_dir: input.bitcoin_core_data_dir || '',
+          fee_threshold: input.fee_threshold,
+          min_interval: input.min_interval,
+        },
+        sv2_tp: {
+          address: input.sv2_tp_address,
+          public_key: input.sv2_tp_public_key || '',
+        },
+      },
+      jds: {
+        enabled: input.enable_jds,
+        listen_address: input.jds_listen_address,
+        supported_extensions: [],
+        required_extensions: [],
+      },
+      monitoring: {
+        enabled: input.monitoring_enabled,
+        address: input.monitoring_address || '',
+        cache_refresh_secs: input.monitoring_cache_refresh_secs ?? 15,
+      },
     }
 
     await configToml.write(effects, config)

@@ -29,26 +29,46 @@ export const versionGraph = VersionGraph.of({
       // Pool signature for coinbase tx (random to preserve privacy)
       pool_signature: `Pool-${Math.random().toString(36).substring(2, 15)}`,
 
-      // Log File
-      log_file: './pool.log',
+      // Optional log file - blank means disabled
+      log_file: '',
 
       // Shares configuration
       shares_per_minute: 6.0,
       share_batch_size: 10,
 
       // Protocol extensions
-      supported_extensions: JSON.stringify([]),
-      required_extensions: JSON.stringify([]),
+      supported_extensions: [],
+      required_extensions: [],
 
-      // Template Provider Mode - default to local
-      template_provider_mode: 'local-sv2-tp',
-      tp_address_local: '127.0.0.1:8442',
-      tp_address_remote: '',
-      tp_public_key_remote: '',
-      bitcoin_network: '',
-      bitcoin_ipc_socket: '',
-      bitcoin_fee_threshold: 0,
-      bitcoin_min_interval: 0,
+      // Template Provider - default to Bitcoin Core IPC on mainnet
+      template_provider: {
+        mode: 'bitcoin_core_ipc',
+        bitcoin_core_ipc: {
+          network: 'mainnet',
+          data_dir: '',
+          fee_threshold: 100,
+          min_interval: 5,
+        },
+        sv2_tp: {
+          address: '127.0.0.1:8442',
+          public_key: '',
+        },
+      },
+
+      // Embedded Job Declarator Server - enabled by default
+      jds: {
+        enabled: true,
+        listen_address: '0.0.0.0:34264',
+        supported_extensions: [],
+        required_extensions: [],
+      },
+
+      // Monitoring endpoint - disabled by default
+      monitoring: {
+        enabled: false,
+        address: '127.0.0.1:9090',
+        cache_refresh_secs: 15,
+      },
     })
 
     // Create configuration task for user

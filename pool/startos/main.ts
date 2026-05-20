@@ -1,6 +1,75 @@
 import { configToml } from './fileModels/config.toml'
 import { sdk } from './sdk'
 
+function ipcSocketPath(network: string): string {
+  const base = '/ipc'
+  return network === 'mainnet' ? `${base}/node.sock` : `${base}/${network}/node.sock`
+}
+
+function tomlString(s: string): string {
+  return `"${s.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
+}
+
+type PoolConfig = ReturnType<typeof configToml.validate>
+
+function renderConfig(config: PoolConfig): string {
+  const lines: string[] = []
+  lines.push('# Pioneer Hash SV2 Pool Configuration')
+  lines.push(`authority_public_key = ${tomlString(config.authority_public_key)}`)
+  lines.push(`authority_secret_key = ${tomlString(config.authority_secret_key)}`)
+  lines.push(`cert_validity_sec = ${config.cert_validity_sec}`)
+  lines.push(`listen_address = ${tomlString(config.listen_address)}`)
+  lines.push('')
+  lines.push(`coinbase_reward_script = ${tomlString(config.coinbase_reward_script)}`)
+  lines.push(`server_id = ${config.server_id}`)
+  lines.push(`pool_signature = ${tomlString(config.pool_signature)}`)
+  if (config.log_file && config.log_file.length > 0) {
+    lines.push(`log_file = ${tomlString(config.log_file)}`)
+  }
+  lines.push('')
+  lines.push(`shares_per_minute = ${config.shares_per_minute}`)
+  lines.push(`share_batch_size = ${config.share_batch_size}`)
+  lines.push('')
+  lines.push(`supported_extensions = [${config.supported_extensions.join(', ')}]`)
+  lines.push(`required_extensions = [${config.required_extensions.join(', ')}]`)
+
+  if (config.monitoring.enabled) {
+    if (config.monitoring.address && config.monitoring.address.length > 0) {
+      lines.push(`monitoring_address = ${tomlString(config.monitoring.address)}`)
+    }
+    lines.push(`monitoring_cache_refresh_secs = ${config.monitoring.cache_refresh_secs}`)
+  }
+
+  lines.push('')
+
+  if (config.template_provider.mode === 'bitcoin_core_ipc') {
+    const ipc = config.template_provider.bitcoin_core_ipc
+    const dataDir = ipc.data_dir && ipc.data_dir.length > 0 ? ipc.data_dir : '/ipc'
+    lines.push('[template_provider_type.BitcoinCoreIpc]')
+    lines.push(`network = ${tomlString(ipc.network)}`)
+    lines.push(`data_dir = ${tomlString(dataDir)}`)
+    lines.push(`fee_threshold = ${ipc.fee_threshold}`)
+    lines.push(`min_interval = ${ipc.min_interval}`)
+  } else {
+    const sv2 = config.template_provider.sv2_tp
+    lines.push('[template_provider_type.Sv2Tp]')
+    lines.push(`address = ${tomlString(sv2.address)}`)
+    if (sv2.public_key && sv2.public_key.length > 0) {
+      lines.push(`public_key = ${tomlString(sv2.public_key)}`)
+    }
+  }
+
+  if (config.jds.enabled) {
+    lines.push('')
+    lines.push('[jds]')
+    lines.push(`listen_address = ${tomlString(config.jds.listen_address)}`)
+    lines.push(`supported_extensions = [${config.jds.supported_extensions.join(', ')}]`)
+    lines.push(`required_extensions = [${config.jds.required_extensions.join(', ')}]`)
+  }
+
+  return lines.join('\n') + '\n'
+}
+
 export const main = sdk.setupMain(async ({ effects, started }) => {
   console.info('Starting Pioneer Hash SV2 Pool!')
 
@@ -20,29 +89,11 @@ export const main = sdk.setupMain(async ({ effects, started }) => {
     )
   }
 
-  const configContent = `# Pioneer Hash SV2 Pool Configuration
-authority_public_key = "${config.authority_public_key}"
-authority_secret_key = "${config.authority_secret_key}"
-cert_validity_sec = ${config.cert_validity_sec}
-listen_address = "${config.listen_address}"
-
-coinbase_reward_script = "${config.coinbase_reward_script}"
-server_id = ${config.server_id}
-pool_signature = "${config.pool_signature}"
-
-log_file = "${config.log_file}"
-
-shares_per_minute = ${config.shares_per_minute}
-share_batch_size = ${config.share_batch_size}
-
-supported_extensions = []
-required_extensions = []
-
-[template_provider_type.BitcoinCoreIpc]
-unix_socket_path = "${config.bitcoin_ipc_socket}"
-fee_threshold = ${config.bitcoin_fee_threshold}
-min_interval = ${config.bitcoin_min_interval}
-`
+  const configContent = renderConfig(config)
+  const useIpc = config.template_provider.mode === 'bitcoin_core_ipc'
+  const expectedSocketPath = useIpc
+    ? ipcSocketPath(config.template_provider.bitcoin_core_ipc.network)
+    : null
 
   const initContainer = await sdk.SubContainer.of(
     effects,
@@ -63,24 +114,29 @@ min_interval = ${config.bitcoin_min_interval}
   ])
   await initContainer.destroy()
 
-  console.info('Pool configured with Bitcoin Core IPC')
+  console.info(
+    useIpc
+      ? 'Pool configured with Bitcoin Core IPC'
+      : 'Pool configured with remote Sv2 Template Provider',
+  )
 
-  const mounts = sdk.Mounts.of()
-    .mountVolume({
-      volumeId: 'main',
-      subpath: null,
-      mountpoint: '/data',
-      readonly: false,
-    })
-    .mountDependency({
+  let mounts = sdk.Mounts.of().mountVolume({
+    volumeId: 'main',
+    subpath: null,
+    mountpoint: '/data',
+    readonly: false,
+  })
+
+  if (useIpc) {
+    mounts = mounts.mountDependency({
       dependencyId: 'bitcoind',
       volumeId: 'main',
       subpath: 'ipc',
       mountpoint: '/ipc',
       readonly: true,
     })
-
-  console.info('Mounting Bitcoin Core IPC socket for direct connection')
+    console.info('Mounting Bitcoin Core IPC socket for direct connection')
+  }
 
   const subcontainer = await sdk.SubContainer.of(
     effects,
@@ -89,21 +145,19 @@ min_interval = ${config.bitcoin_min_interval}
     'sv2-pool-sub',
   )
 
-  console.info('Validating Bitcoin Core IPC socket availability...')
-  const ipcCheck = await subcontainer.exec([
-    'test',
-    '-S',
-    config.bitcoin_ipc_socket,
-  ])
+  if (useIpc && expectedSocketPath) {
+    console.info('Validating Bitcoin Core IPC socket availability...')
+    const ipcCheck = await subcontainer.exec(['test', '-S', expectedSocketPath])
 
-  if (ipcCheck.exitCode !== 0) {
-    await subcontainer.destroy()
-    throw new Error(
-      `Bitcoin Core IPC socket not found at ${config.bitcoin_ipc_socket}. ` +
-        `Ensure Bitcoin Core has IPC enabled in its configuration.`,
-    )
+    if (ipcCheck.exitCode !== 0) {
+      await subcontainer.destroy()
+      throw new Error(
+        `Bitcoin Core IPC socket not found at ${expectedSocketPath}. ` +
+          `Ensure Bitcoin Core has IPC enabled in its configuration.`,
+      )
+    }
+    console.info('Bitcoin Core IPC socket validated successfully')
   }
-  console.info('Bitcoin Core IPC socket validated successfully')
 
   const daemons = sdk.Daemons.of(effects, started).addDaemon('primary', {
     subcontainer,
@@ -121,31 +175,33 @@ min_interval = ${config.bitcoin_min_interval}
     requires: [],
   })
 
-  daemons.addHealthCheck('ipc-validation', {
-    ready: {
-      display: 'Bitcoin Core IPC Connection',
-      fn: async () => {
-        const ipcCheck = await subcontainer.exec([
-          'test',
-          '-S',
-          config.bitcoin_ipc_socket,
-        ])
+  if (useIpc && expectedSocketPath) {
+    daemons.addHealthCheck('ipc-validation', {
+      ready: {
+        display: 'Bitcoin Core IPC Connection',
+        fn: async () => {
+          const ipcCheck = await subcontainer.exec([
+            'test',
+            '-S',
+            expectedSocketPath,
+          ])
 
-        if (ipcCheck.exitCode !== 0) {
-          return {
-            result: 'failure' as const,
-            message: `Bitcoin Core IPC socket not available at ${config.bitcoin_ipc_socket}. Check that Bitcoin Core has IPC enabled.`,
+          if (ipcCheck.exitCode !== 0) {
+            return {
+              result: 'failure' as const,
+              message: `Bitcoin Core IPC socket not available at ${expectedSocketPath}. Check that Bitcoin Core has IPC enabled.`,
+            }
           }
-        }
 
-        return {
-          result: 'success' as const,
-          message: 'Bitcoin Core IPC socket is available',
-        }
+          return {
+            result: 'success' as const,
+            message: 'Bitcoin Core IPC socket is available',
+          }
+        },
       },
-    },
-    requires: ['primary'],
-  })
+      requires: ['primary'],
+    })
+  }
 
   return daemons
 })

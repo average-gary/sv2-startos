@@ -49,8 +49,8 @@ export const manifest = setupManifest({
   dependencies: {
     bitcoind: {
       description:
-        'Bitcoin Core (mainnet) for direct IPC connection. Provides block templates via IPC socket.',
-      optional: false,
+        'Bitcoin Core for direct IPC connection. Provides block templates via IPC socket. Only required when Template Provider Mode is set to Bitcoin Core IPC.',
+      optional: true,
       s9pk: null,
     },
   },
