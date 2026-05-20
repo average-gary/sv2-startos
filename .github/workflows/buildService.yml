@@ -17,8 +17,6 @@ jobs:
         service:
           - pool
           - job-declaration-client
-          - job-declaration-server
-          - template-provider
           - translator
     steps:
       - name: Prepare StartOS SDK
