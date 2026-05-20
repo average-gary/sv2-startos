@@ -14,7 +14,7 @@ export const versionGraph = VersionGraph.of({
         listening_address: '0.0.0.0:34265',
         min_supported_version: 2,
         max_supported_version: 2,
-        log_file: './jd-client.log',
+        log_file: '',
 
         // Authority keys for encrypted downstream connections
         // These are example keys from sv2-apps - users should generate their own for production
@@ -28,13 +28,23 @@ export const versionGraph = VersionGraph.of({
         // Shares Configuration (from sv2-apps examples)
         shares_per_minute: 6.0,
         share_batch_size: 10,
+        reserved_downstream_rollable_extranonce_size: 8,
 
         // Mining Mode
         mode: 'FULLTEMPLATE',
 
-        // Template Provider Configuration (local by default)
-        tp_address: '127.0.0.1:8442',
-        tp_authority_public_key: '',
+        // Template Provider Configuration - default to local SV2 TP
+        template_provider_mode: 'sv2_tp',
+        template_provider_sv2_tp: {
+          address: '127.0.0.1:8442',
+          public_key: '',
+        },
+        template_provider_bitcoin_core_ipc: {
+          network: 'mainnet',
+          data_dir: '',
+          fee_threshold: 100,
+          min_interval: 5,
+        },
 
         // JDC Signature
         jdc_signature: 'StartOS',
@@ -43,15 +53,23 @@ export const versionGraph = VersionGraph.of({
         // Example testnet address from sv2-apps - users must configure their own
         coinbase_reward_script: 'addr(tb1qa0sm0hxzj0x25rh8gw5xlzwlsfvvyz8u96w3p8)',
 
+        // SV2 protocol extensions
+        supported_extensions: [],
+        required_extensions: [],
+
+        // Monitoring (disabled by default)
+        monitoring_address: '',
+        monitoring_cache_refresh_secs: 15,
+
         // Upstream JDS Connections (local by default)
         upstreams: [
           {
             authority_pubkey:
               '9auqWEzQDVyd2oe1JVGFLMLHZtCo2FFqZwtKA5gd9xbuEu7PH72',
             pool_address: '127.0.0.1',
-            pool_port: '34254',
+            pool_port: 34254,
             jds_address: '127.0.0.1',
-            jds_port: '34264',
+            jds_port: 34264,
           },
         ],
       }),

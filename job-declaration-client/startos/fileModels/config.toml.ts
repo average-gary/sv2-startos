@@ -1,5 +1,5 @@
 import { matches, FileHelper } from '@start9labs/start-sdk'
-const { object, string, number, literal, array } = matches
+const { object, string, number, literal, literals, array } = matches
 
 const shape = object({
   // JD Client listening address - fixed
@@ -23,13 +23,8 @@ const shape = object({
   // Share batch size
   share_batch_size: number,
 
-  // JDC supports two modes: "FULLTEMPLATE" - full template mining, "COINBASEONLY" - coinbase-only mining
-  mode: string,
-
-  // Template Provider config
-  tp_address: string,
-  // Optional: only needed for remote/hosted Template Providers (can be empty string)
-  tp_authority_public_key: string,
+  // JDC mode: full template, coinbase-only, or solo mining
+  mode: literals('FULLTEMPLATE', 'COINBASEONLY', 'SOLOMINING'),
 
   // String to be added into the Coinbase scriptSig
   jdc_signature: string,
@@ -37,16 +32,40 @@ const shape = object({
   // Coinbase reward script for Solo Mining (fallback solution)
   coinbase_reward_script: string,
 
-  // Optional Log File
-  log_file: literal('./jd-client.log').onMismatch('./jd-client.log'),
+  // Optional Log File (empty string disables file logging)
+  log_file: string,
 
-  // List of upstreams (JDS) used as backup endpoints
+  // SV2 protocol extensions advertised/required
+  supported_extensions: array(number),
+  required_extensions: array(number),
+
+  // Optional Prometheus monitoring endpoint (empty string disables)
+  monitoring_address: string,
+  monitoring_cache_refresh_secs: number,
+
+  // Number of rollable extranonce bytes reserved for extended downstreams
+  reserved_downstream_rollable_extranonce_size: number,
+
+  // Template Provider mode + nested config (rendered into [template_provider_type.X] in main.ts)
+  template_provider_mode: literals('bitcoin_core_ipc', 'sv2_tp'),
+  template_provider_bitcoin_core_ipc: object({
+    network: literals('mainnet', 'testnet4', 'signet', 'regtest'),
+    data_dir: string,
+    fee_threshold: number,
+    min_interval: number,
+  }),
+  template_provider_sv2_tp: object({
+    address: string,
+    public_key: string,
+  }),
+
+  // List of upstreams (Pool + JDS) used as backup endpoints
   upstreams: array(object({
     authority_pubkey: string,
     pool_address: string,
-    pool_port: string,
+    pool_port: number,
     jds_address: string,
-    jds_port: string,
+    jds_port: number,
   })),
 })
 
