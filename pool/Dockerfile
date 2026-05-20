@@ -1,6 +1,10 @@
 # Stage 1: Build the pool
 FROM rust:1.89-bookworm AS builder
 
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    capnproto libcapnp-dev && \
+    rm -rf /var/lib/apt/lists/*
+
 # Set working directory
 WORKDIR /build
 
