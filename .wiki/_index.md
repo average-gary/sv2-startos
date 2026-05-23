@@ -32,7 +32,8 @@ Upstream `stratum-mining/sv2-ui` is **already being built** as a TypeScript UI a
 
 ## Outputs
 
-- `output/playbook-startos-package-ui-2026-05-21.md` — actionable playbook
+- `output/playbook-startos-package-ui-2026-05-21.md` — actionable playbook (high-level decision tree)
+- `output/plan-pioneer-hash-sv2-ui-2026-05-21.md` — implementation **spec** for the custom Pioneer Hash UI
 
 ## Source counts
 
