@@ -1,3 +1,6 @@
 [submodule "sv2-apps"]
 	path = sv2-apps
 	url = https://github.com/stratum-mining/sv2-apps.git
+[submodule "sv2-ui"]
+	path = sv2-ui
+	url = https://github.com/stratum-mining/sv2-ui.git
