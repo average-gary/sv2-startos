@@ -1,1 +1,20 @@
 .vscode
+
+# UI bundle: source lives at /ui; copied into each service at make time
+pool/ui/
+translator/ui/
+job-declaration-client/ui/
+
+# Build artifacts
+**/*.s9pk
+**/*.s9pk.sha256
+
+# JS build output
+*/javascript/
+*/node_modules/
+ui/node_modules/
+ui/dist/
+
+# Local act config
+.actrc
+ui/tsconfig.tsbuildinfo

@@ -118,6 +118,7 @@ check-init:
 .PHONY: build-service
 build-service:
 	@if [ -d sv2-apps ] && [ ! -d $(SERVICE)/sv2-apps ]; then echo "   Copying sv2-apps..."; cp -r sv2-apps $(SERVICE)/; fi
+	@if [ -d ui ] && [ ! -d $(SERVICE)/ui ]; then echo "   Copying ui..."; rsync -a --exclude node_modules --exclude dist ui/ $(SERVICE)/ui/; fi
 	@PACKAGE_ID=$$(awk -F"'" '/id:/ {print $$2}' $(SERVICE)/startos/manifest.ts); \
 	BUILD=universal; \
 	S9PK=$(SERVICE)/$${PACKAGE_ID}.s9pk; \
@@ -166,7 +167,7 @@ clean-service:
 	@cd $(SERVICE) && \
 	PACKAGE_ID=$$(awk -F"'" '/id:/ {print $$2}' startos/manifest.ts); \
 	echo "   Cleaning up build artifacts..."; \
-	rm -rf $${PACKAGE_ID}.s9pk $${PACKAGE_ID}_x86_64.s9pk $${PACKAGE_ID}_aarch64.s9pk javascript node_modules
+	rm -rf $${PACKAGE_ID}.s9pk $${PACKAGE_ID}_x86_64.s9pk $${PACKAGE_ID}_aarch64.s9pk javascript node_modules ui sv2-apps
 
 # Internal target to install a single service
 .PHONY: install-service

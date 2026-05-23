@@ -24,5 +24,20 @@ export const setInterfaces = sdk.setupInterfaces(async ({ effects }) => {
 
   const downstreamReceipt = await downstreamMultiOrigin.export([downstreamInterface])
 
-  return [downstreamReceipt]
+  const uiMulti = sdk.MultiHost.of(effects, 'ui-multi')
+  const uiMultiOrigin = await uiMulti.bindPort(80, { protocol: 'http' })
+  const uiInterface = sdk.createInterface(effects, {
+    name: 'Pioneer Hash SV2 Pool Dashboard',
+    id: 'pool-ui',
+    description: 'Pioneer Hash dashboard for live pool monitoring and config viewing',
+    type: 'ui',
+    masked: false,
+    schemeOverride: null,
+    username: null,
+    path: '',
+    query: {},
+  })
+  const uiReceipt = await uiMultiOrigin.export([uiInterface])
+
+  return [downstreamReceipt, uiReceipt]
 })

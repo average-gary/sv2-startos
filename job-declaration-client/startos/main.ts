@@ -55,11 +55,10 @@ ${pubkeyLine}`
   const logFileLine = config.log_file
     ? `log_file = "${config.log_file}"\n`
     : ''
-  const monitoringLines = config.monitoring_address
-    ? `monitoring_address = "${config.monitoring_address}"
-monitoring_cache_refresh_secs = ${config.monitoring_cache_refresh_secs}
+  // Monitoring is always on internally so the UI sidecar can reach it on localhost:9090.
+  const monitoringLines = `monitoring_address = "0.0.0.0:9090"
+monitoring_cache_refresh_secs = ${config.monitoring_cache_refresh_secs || 15}
 `
-    : ''
 
   const supportedExt = config.supported_extensions.join(', ')
   const requiredExt = config.required_extensions.join(', ')
@@ -109,29 +108,55 @@ ${tpSection}`
 
   console.info('JD Client config rendered to /data/config.toml')
 
-  return sdk.Daemons.of(effects, started).addDaemon('primary', {
-    subcontainer: await sdk.SubContainer.of(
-      effects,
-      { imageId: 'sv2-jd-client' },
-      sdk.Mounts.of().mountVolume({
-        volumeId: 'main',
-        subpath: null,
-        mountpoint: '/data',
-        readonly: false,
-      }),
-      'sv2-jd-client-sub',
-    ),
-    exec: {
-      command: ['jd_client_sv2', '-c', '/data/config.toml'],
-    },
-    ready: {
-      display: 'Pioneer Hash JD Client Service',
-      fn: () =>
-        sdk.healthCheck.checkPortListening(effects, 34265, {
-          successMessage: 'Pioneer Hash JD Client is accepting connections',
-          errorMessage: 'Pioneer Hash JD Client is not ready',
-        }),
-    },
-    requires: [],
-  })
+  const subcontainer = await sdk.SubContainer.of(
+    effects,
+    { imageId: 'sv2-jd-client' },
+    sdk.Mounts.of().mountVolume({
+      volumeId: 'main',
+      subpath: null,
+      mountpoint: '/data',
+      readonly: false,
+    }),
+    'sv2-jd-client-sub',
+  )
+
+  const uiSubcontainer = await sdk.SubContainer.of(
+    effects,
+    { imageId: 'sv2-jd-client-ui' },
+    sdk.Mounts.of().mountVolume({
+      volumeId: 'main',
+      subpath: null,
+      mountpoint: '/data',
+      readonly: true,
+    }),
+    'sv2-jd-client-ui-sub',
+  )
+
+  return sdk.Daemons.of(effects, started)
+    .addDaemon('primary', {
+      subcontainer,
+      exec: { command: ['jd_client_sv2', '-c', '/data/config.toml'] },
+      ready: {
+        display: 'Pioneer Hash JD Client Service',
+        fn: () =>
+          sdk.healthCheck.checkPortListening(effects, 34265, {
+            successMessage: 'Pioneer Hash JD Client is accepting connections',
+            errorMessage: 'Pioneer Hash JD Client is not ready',
+          }),
+      },
+      requires: [],
+    })
+    .addDaemon('ui', {
+      subcontainer: uiSubcontainer,
+      exec: { command: ['/entrypoint.sh'] },
+      ready: {
+        display: 'Pioneer Hash JD Client Dashboard',
+        fn: () =>
+          sdk.healthCheck.checkPortListening(effects, 80, {
+            successMessage: 'Dashboard is reachable',
+            errorMessage: 'Dashboard is not ready',
+          }),
+      },
+      requires: ['primary'],
+    })
 })

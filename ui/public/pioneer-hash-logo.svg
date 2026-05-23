@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect width="64" height="64" rx="12" fill="#0F0F1A"/>
+  <path d="M32 12 L52 24 L52 40 L32 52 L12 40 L12 24 Z" fill="none" stroke="#F2A900" stroke-width="3"/>
+  <text x="32" y="38" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="700" fill="#F2A900">PH</text>
+</svg>

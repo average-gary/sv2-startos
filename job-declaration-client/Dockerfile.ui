@@ -1,0 +1,26 @@
+# Stage 1: Build the SPA
+FROM node:20-alpine AS spa-builder
+WORKDIR /build
+COPY ui/package.json ui/package-lock.json ./
+RUN npm ci
+COPY ui/ ./
+ENV VITE_SERVICE=jdc
+RUN npm run build
+
+# Stage 2: Build configd
+FROM golang:1.22-alpine AS configd-builder
+WORKDIR /build
+COPY ui/configd/ ./
+RUN CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o /out/configd .
+
+# Stage 3: Runtime
+FROM caddy:2-alpine
+RUN apk add --no-cache ca-certificates
+COPY --from=spa-builder     /build/dist            /srv/dist
+COPY --from=configd-builder /out/configd           /usr/local/bin/configd
+COPY ui/caddy/Caddyfile                            /etc/caddy/Caddyfile
+COPY ui/caddy/entrypoint.sh                        /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+ENV CONFIGD_SERVICE=jdc
+EXPOSE 80
+ENTRYPOINT ["/entrypoint.sh"]

@@ -1,0 +1,29 @@
+{
+  admin off
+  auto_https off
+  persist_config off
+  servers {
+    trusted_proxies static private_ranges
+  }
+}
+
+:80 {
+  encode gzip
+
+  # configd serves /config (TOML→JSON, secrets redacted) on :9091
+  handle /config {
+    reverse_proxy localhost:9091
+  }
+
+  # Daemon's monitoring HTTP server on :9090
+  handle /api/* {
+    reverse_proxy localhost:9090
+  }
+
+  # Static SPA with history-API fallback
+  handle {
+    root * /srv/dist
+    try_files {path} /index.html
+    file_server
+  }
+}

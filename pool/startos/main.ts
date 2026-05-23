@@ -33,12 +33,11 @@ function renderConfig(config: PoolConfig): string {
   lines.push(`supported_extensions = [${config.supported_extensions.join(', ')}]`)
   lines.push(`required_extensions = [${config.required_extensions.join(', ')}]`)
 
-  if (config.monitoring.enabled) {
-    if (config.monitoring.address && config.monitoring.address.length > 0) {
-      lines.push(`monitoring_address = ${tomlString(config.monitoring.address)}`)
-    }
-    lines.push(`monitoring_cache_refresh_secs = ${config.monitoring.cache_refresh_secs}`)
-  }
+  // Monitoring is always enabled internally so the UI sidecar can reach it on localhost:9090.
+  // The user-facing toggle (config.monitoring.enabled) controls whether to also expose
+  // monitoring as a separate StartOS interface for external Prometheus scraping.
+  lines.push(`monitoring_address = "0.0.0.0:9090"`)
+  lines.push(`monitoring_cache_refresh_secs = ${config.monitoring.cache_refresh_secs}`)
 
   lines.push('')
 
@@ -159,21 +158,47 @@ export const main = sdk.setupMain(async ({ effects, started }) => {
     console.info('Bitcoin Core IPC socket validated successfully')
   }
 
-  const daemons = sdk.Daemons.of(effects, started).addDaemon('primary', {
-    subcontainer,
-    exec: {
-      command: ['pool_sv2', '-c', '/data/config.toml'],
-    },
-    ready: {
-      display: 'Pioneer Hash SV2 Pool Service',
-      fn: () =>
-        sdk.healthCheck.checkPortListening(effects, 34254, {
-          successMessage: 'Pioneer Hash SV2 Pool is accepting connections',
-          errorMessage: 'Pioneer Hash SV2 Pool is not ready',
-        }),
-    },
-    requires: [],
-  })
+  const uiSubcontainer = await sdk.SubContainer.of(
+    effects,
+    { imageId: 'sv2-pool-ui' },
+    sdk.Mounts.of().mountVolume({
+      volumeId: 'main',
+      subpath: null,
+      mountpoint: '/data',
+      readonly: true,
+    }),
+    'sv2-pool-ui-sub',
+  )
+
+  const daemons = sdk.Daemons.of(effects, started)
+    .addDaemon('primary', {
+      subcontainer,
+      exec: {
+        command: ['pool_sv2', '-c', '/data/config.toml'],
+      },
+      ready: {
+        display: 'Pioneer Hash SV2 Pool Service',
+        fn: () =>
+          sdk.healthCheck.checkPortListening(effects, 34254, {
+            successMessage: 'Pioneer Hash SV2 Pool is accepting connections',
+            errorMessage: 'Pioneer Hash SV2 Pool is not ready',
+          }),
+      },
+      requires: [],
+    })
+    .addDaemon('ui', {
+      subcontainer: uiSubcontainer,
+      exec: { command: ['/entrypoint.sh'] },
+      ready: {
+        display: 'Pioneer Hash SV2 Pool Dashboard',
+        fn: () =>
+          sdk.healthCheck.checkPortListening(effects, 80, {
+            successMessage: 'Dashboard is reachable',
+            errorMessage: 'Dashboard is not ready',
+          }),
+      },
+      requires: ['primary'],
+    })
 
   if (useIpc && expectedSocketPath) {
     daemons.addHealthCheck('ipc-validation', {

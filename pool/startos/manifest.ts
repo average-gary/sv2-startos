@@ -32,6 +32,15 @@ export const manifest = setupManifest({
       },
       arch: architectures,
     } as SDKImageInputSpec,
+    'sv2-pool-ui': {
+      source: {
+        dockerBuild: {
+          dockerfile: 'Dockerfile.ui',
+          workdir: '.',
+        },
+      },
+      arch: architectures,
+    } as SDKImageInputSpec,
   },
   hardwareRequirements: {
     arch: architectures,
