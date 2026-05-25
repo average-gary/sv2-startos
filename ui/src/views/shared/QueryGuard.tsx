@@ -4,12 +4,15 @@ export function QueryGuard<T>({
   query,
   children,
   loading = 'ACQUIRING SIGNAL',
+  skeleton,
 }: {
   query: UseQueryResult<T>
   children: (data: T) => React.ReactNode
   loading?: string
+  skeleton?: React.ReactNode
 }) {
   if (query.isLoading) {
+    if (skeleton) return <>{skeleton}</>
     return (
       <div className="flex items-center gap-2 py-3 text-muted-2">
         <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
