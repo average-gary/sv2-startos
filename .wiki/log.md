@@ -3,6 +3,18 @@
 ## [2026-05-21] init
 Local wiki created for sv2-startos. Question of record: "How do we add a UI to these StartOS sv2 packages?"
 
+## [2026-05-25] execute | Pioneer Hash UI v0 — Phase 5 polish complete
+- Brand kit: Field Station system shipped (Fraunces + JetBrains Mono, beacon-amber, chart-paper grid). See ui/BRAND.md
+- ErrorBoundary at route level with Field-Station-styled fallback
+- Skeleton placeholders (MetricCardSkeleton, MetricGridSkeleton, TableSkeleton, KvSkeleton) wired through QueryGuard
+- LastUpdated indicator surfacing dataUpdatedAt + amber-when-stale
+- CopyButton + CopyableValue primitives; Pool now exposes authority pubkey + listen address
+- JDC dashboard depth: mode badge + blurb, conditional upstream-channel section (hidden in SoloMining), connection card, downstream miner table
+- Translator dashboard: aggregated share telemetry card (submitted/accepted/rejected/accept-rate, color-coded thresholds)
+- A11y pass: skip link, semantic landmarks (banner/main/contentinfo), focus-visible rings on nav, aria-live on status pill, tabIndex=-1 main + outline-none for skip-link target
+- Per-service UI.md docs (pool/translator/jd-client)
+- All three services typecheck + build clean; bundle ~85 KB gzipped
+
 ## [2026-05-21] execute | Pioneer Hash UI v0 implementation (Phase 0–4)
 - Phase 0: confirmed via mempool-startos that sibling daemons in one .s9pk share network → localhost:9090 works
 - Phase 1: scaffolded ui/ workspace (Vite + React + TS + Tailwind), bundle 82 KB gzipped per service
