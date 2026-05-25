@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 48" fill="none" aria-label="Pioneer Hash">
+  <!-- Mark, scaled to 32 -->
+  <g transform="translate(0,8)">
+    <path d="M16 1.5 L28.5 8.5 V23.5 L16 30.5 L3.5 23.5 V8.5 Z"
+          stroke="currentColor" stroke-width="1.5"
+          stroke-linejoin="round" fill="none"/>
+    <path d="M16 4.5 L26 10 V22 L16 27.5 L6 22 V10 Z"
+          stroke="currentColor" stroke-width="0.5"
+          stroke-linejoin="round" fill="none" opacity="0.55"/>
+    <path d="M8 20.5 L12.5 14 L15.5 17.5 L20 11 L24 20.5 Z"
+          stroke="currentColor" stroke-width="0.85"
+          stroke-linejoin="round" stroke-linecap="round" fill="none"/>
+    <circle cx="20" cy="8" r="0.7" fill="currentColor"/>
+    <line x1="10" y1="23" x2="22" y2="23"
+          stroke="currentColor" stroke-width="0.85" stroke-linecap="round"/>
+    <line x1="11" y1="25" x2="21" y2="25"
+          stroke="currentColor" stroke-width="0.85" stroke-linecap="round"/>
+  </g>
+
+  <!-- Divider rule -->
+  <line x1="44" y1="14" x2="44" y2="34"
+        stroke="currentColor" stroke-width="0.5" opacity="0.4"/>
+
+  <!-- Wordmark — Fraunces with monospace tracking. Falls back to serif. -->
+  <text x="54" y="22"
+        font-family='"Fraunces", "Times New Roman", Georgia, serif'
+        font-size="16" font-weight="500"
+        font-style="italic" letter-spacing="-0.02em"
+        fill="currentColor">Pioneer</text>
+  <text x="54" y="38"
+        font-family='"JetBrains Mono", "SF Mono", Menlo, monospace'
+        font-size="9" font-weight="700"
+        letter-spacing="0.32em"
+        fill="currentColor">HASH STATION</text>
+</svg>

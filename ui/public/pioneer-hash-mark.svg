@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" aria-label="Pioneer Hash">
+  <!-- Favicon-tuned: simplified hex + peak. No fine details under 16px. -->
+  <path d="M8 1 L14 4.5 V11.5 L8 15 L2 11.5 V4.5 Z"
+        stroke="currentColor" stroke-width="1.25"
+        stroke-linejoin="round" fill="none"/>
+  <path d="M4 11 L6 8 L7.5 9.5 L10 6 L12 11 Z"
+        stroke="currentColor" stroke-width="1"
+        stroke-linejoin="round" fill="currentColor" fill-opacity="0.18"/>
+  <circle cx="10" cy="4.5" r="0.65" fill="currentColor"/>
+</svg>

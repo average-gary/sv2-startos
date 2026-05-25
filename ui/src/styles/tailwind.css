@@ -2,7 +2,64 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Pioneer Hash · Field Station base styles.
+ * Type rendering: optimized for the Fraunces + JetBrains Mono pairing.
+ */
+
+:root {
+  /* Expose primary so SVG `currentColor` and inline styles can pick it up */
+  --ph-primary: #D9923B;
+  --ph-primary-dark: #A66A1F;
+  color-scheme: dark;
+}
+
 @layer base {
   html, body, #root { height: 100%; }
-  body { background-color: theme(colors.surface); color: theme(colors.text); }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    background-color: theme(colors.surface);
+    color: theme(colors.text);
+    font-family: theme(fontFamily.sans);
+    font-feature-settings: 'ss01', 'cv11'; /* JetBrains Mono: friendlier zero + fewer ligatures */
+  }
+
+  /* Fraunces is a variable font — let opsz/wght breathe at display sizes */
+  .font-display {
+    font-feature-settings: 'ss01', 'ss02';
+    font-variation-settings: 'opsz' 144;
+  }
+
+  /* Selection — beacon amber */
+  ::selection {
+    background-color: theme(colors.primary);
+    color: theme(colors.surface);
+  }
+
+  /* Scrollbars (webkit) — match the field-instrument vibe */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: theme(colors.surface-2);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: theme(colors.surface-4);
+    border-radius: 0;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: theme(colors.border-strong);
+  }
+}
+
+@layer components {
+  /* Tabular numerals everywhere they appear in data tables */
+  .tabular { font-variant-numeric: tabular-nums; }
 }

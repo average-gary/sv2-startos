@@ -1,18 +1,44 @@
 type Tone = 'success' | 'warning' | 'error' | 'info' | 'muted'
 
 const toneClass: Record<Tone, string> = {
-  success: 'bg-success/15 text-success border-success/30',
-  warning: 'bg-warning/15 text-warning border-warning/30',
-  error: 'bg-error/15 text-error border-error/30',
-  info: 'bg-info/15 text-info border-info/30',
-  muted: 'bg-surface-3 text-muted border-border',
+  success: 'text-success',
+  warning: 'text-warning',
+  error: 'text-error',
+  info: 'text-info',
+  muted: 'text-muted',
 }
 
-export function StatusPill({ children, tone = 'muted' }: { children: React.ReactNode; tone?: Tone }) {
+const dotClass: Record<Tone, string> = {
+  success: 'bg-success',
+  warning: 'bg-warning',
+  error: 'bg-error',
+  info: 'bg-info',
+  muted: 'bg-muted-2',
+}
+
+/**
+ * StatusPill — instrument indicator. Square corners, signal lamp + label.
+ * No filled chips. The lamp does the work.
+ */
+export function StatusPill({
+  children,
+  tone = 'muted',
+}: {
+  children: React.ReactNode
+  tone?: Tone
+}) {
   return (
     <span
-      className={`inline-flex items-center px-2 py-0.5 rounded-full border text-xs font-medium ${toneClass[tone]}`}
+      className={`inline-flex items-center gap-2 border border-border-strong px-2.5 py-1 rounded-sm text-[0.6875rem] font-mono font-bold uppercase tracking-[0.15em] ${toneClass[tone]}`}
     >
+      <span className="relative inline-flex">
+        <span className={`block w-1.5 h-1.5 rounded-full ${dotClass[tone]}`} />
+        {tone === 'success' && (
+          <span
+            className={`absolute inset-0 rounded-full ${dotClass[tone]} animate-ping opacity-60`}
+          />
+        )}
+      </span>
       {children}
     </span>
   )
