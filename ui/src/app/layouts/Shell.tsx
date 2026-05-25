@@ -17,6 +17,14 @@ export function Shell() {
 
   return (
     <div className="min-h-full flex flex-col relative">
+      {/* Skip link for keyboard users */}
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:bg-primary focus:text-surface focus:px-3 focus:py-2 focus:font-mono focus:text-[0.6875rem] focus:font-bold focus:uppercase focus:tracking-[0.15em] focus:rounded-sm"
+      >
+        Skip to dashboard
+      </a>
+
       {/* Chart-paper grid overlay — fixed, subtle, never obstructs. */}
       <div
         aria-hidden
@@ -30,22 +38,23 @@ export function Shell() {
       />
 
       {/* Beacon stripe — single line of brand color across the very top */}
-      <div className="h-[2px] bg-primary relative z-10" />
+      <div className="h-[2px] bg-primary relative z-10" aria-hidden />
 
-      <header className="border-b border-border bg-surface-2 relative z-10">
+      <header
+        role="banner"
+        className="border-b border-border bg-surface-2 relative z-10"
+      >
         <div className="max-w-7xl mx-auto px-6 pt-5 pb-3 flex items-end justify-between gap-6">
           <div className="flex items-center gap-4">
-            {/* Logo lockup — currentColor follows brand */}
             <img
               src="/pioneer-hash-lockup.svg"
               alt="Pioneer Hash"
-              className="h-10 w-auto text-primary"
+              className="h-10 w-auto"
               style={{ color: 'var(--ph-primary, #D9923B)' }}
             />
           </div>
 
           <div className="flex items-center gap-6">
-            {/* Station identification — feels like a desk plate */}
             <div className="hidden md:flex flex-col items-end leading-tight">
               <span className="text-[0.6875rem] uppercase tracking-[0.2em] text-muted-2">
                 Station
@@ -54,7 +63,9 @@ export function Shell() {
                 {STATION_CODES[SERVICE]} · {SERVICE_TAG[SERVICE]}
               </span>
             </div>
-            <StatusPill tone={tone}>{label}</StatusPill>
+            <div role="status" aria-live="polite">
+              <StatusPill tone={tone}>{label}</StatusPill>
+            </div>
           </div>
         </div>
 
@@ -62,12 +73,18 @@ export function Shell() {
           <h1 className="font-display text-[1.375rem] italic text-text-strong tracking-tight">
             {SERVICE_LABEL[SERVICE]}
           </h1>
-          <span className="hidden sm:block text-[0.6875rem] uppercase tracking-[0.2em] text-muted-2 font-mono">
+          <span
+            aria-hidden
+            className="hidden sm:block text-[0.6875rem] uppercase tracking-[0.2em] text-muted-2 font-mono"
+          >
             Ad Ultra Hash
           </span>
         </div>
 
-        <nav className="max-w-7xl mx-auto px-6 flex gap-1 border-t border-border">
+        <nav
+          aria-label="Primary"
+          className="max-w-7xl mx-auto px-6 flex gap-1 border-t border-border"
+        >
           {(
             [
               ['/', 'Dashboard'],
@@ -79,7 +96,7 @@ export function Shell() {
               to={to}
               end
               className={({ isActive }) =>
-                `px-4 py-2.5 text-xs font-mono font-bold uppercase tracking-[0.15em] border-b-2 -mb-px transition-colors ${
+                `px-4 py-2.5 text-xs font-mono font-bold uppercase tracking-[0.15em] border-b-2 -mb-px transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-2 ${
                   isActive
                     ? 'border-primary text-text-strong'
                     : 'border-transparent text-muted hover:text-text'
@@ -92,15 +109,23 @@ export function Shell() {
         </nav>
       </header>
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-8 relative z-10">
+      <main
+        id="main"
+        role="main"
+        className="flex-1 max-w-7xl w-full mx-auto px-6 py-8 relative z-10 outline-none"
+        tabIndex={-1}
+      >
         <Outlet />
       </main>
 
-      <footer className="border-t border-border text-[0.6875rem] py-3 relative z-10 bg-surface-2/40">
+      <footer
+        role="contentinfo"
+        className="border-t border-border text-[0.6875rem] py-3 relative z-10 bg-surface-2/40"
+      >
         <div className="max-w-7xl mx-auto px-6 flex justify-between items-center font-mono uppercase tracking-[0.15em] text-muted-2">
           <span>↳ Configure via StartOS action</span>
           <span className="flex items-center gap-2">
-            <span className="inline-block w-1 h-1 rounded-full bg-primary" />
+            <span aria-hidden className="inline-block w-1 h-1 rounded-full bg-primary" />
             Pioneer Hash · v0.1.0
           </span>
         </div>
