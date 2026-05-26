@@ -3,6 +3,8 @@ title: StartOS SDK UI surfaces (start-sdk v0.4.0-beta.44)
 type: docs
 source: local node_modules + Start9Labs/start-os repo
 date: 2026-05-21
+verified: 2026-05-26
+volatility: hot
 quality: 5
 confidence: high
 tags: [startos, sdk, ui, interfaces]

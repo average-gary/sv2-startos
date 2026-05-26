@@ -3,6 +3,8 @@ title: SV2 UI information architecture — what to show per service
 type: articles
 source: synthesis from Braiins Pool, mempool.space, public-pool, SRI READMEs
 date: 2026-05-21
+verified: 2026-05-26
+volatility: hot
 quality: 4
 confidence: medium
 tags: [sv2, ui, product-design, dashboard]

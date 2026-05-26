@@ -2,9 +2,10 @@
 title: SV2 StartOS Package Knowledge Base
 type: wiki
 created: 2026-05-21
-updated: 2026-05-21
+updated: 2026-05-26
 sources: 6
 articles: 0
+status: implemented
 ---
 
 # SV2 StartOS Package Knowledge Base
@@ -13,9 +14,9 @@ Local research wiki for the `sv2-startos` repo — Stratum V2 (pool, translator,
 
 ## Question of record
 
-**How do we add a UI to the SV2 StartOS packages?**
+**How do we add a UI to the SV2 StartOS packages?** → **Answered & shipped** in commits `1b1d9a6..f2f8a5c`.
 
-→ See [[output/playbook-startos-package-ui-2026-05-21]] for the playbook.
+→ See [[output/playbook-startos-package-ui-2026-05-21]] for the playbook and [[output/plan-pioneer-hash-sv2-ui-2026-05-21]] for the implemented spec.
 
 ## Headline finding (2026-05-21)
 

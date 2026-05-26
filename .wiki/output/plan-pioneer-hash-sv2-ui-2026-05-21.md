@@ -2,6 +2,7 @@
 title: "Plan: Pioneer Hash custom UI for SV2 daemons"
 type: plan
 format: spec
+status: implemented
 sources:
   - raw/docs/2026-05-21-sv2-monitoring-http-api.md
   - raw/docs/2026-05-21-startos-sdk-ui-surfaces.md
@@ -11,6 +12,19 @@ sources:
   - raw/repos/2026-05-21-stratum-mining-sv2-ui-upstream.md
   - output/playbook-startos-package-ui-2026-05-21.md
 generated: 2026-05-21
+verified: 2026-05-26
+volatility: hot
+implemented-in:
+  - 1b1d9a6  # Remove jd-server package
+  - 6594ac5  # Standardize package versions
+  - 5076981  # Install capnproto in pool/jd-client builders
+  - 4fe3ffd  # Pool config alignment + embedded JDS
+  - 7142374  # Translator config alignment
+  - b2e2baf  # JD-client config + runtime fixes
+  - b95f2e1  # Pioneer Hash UI v0 (sidecar pattern, configd, dashboards)
+  - e4c45ed  # Field Station brand kit
+  - de2b8c1  # Phase 5 polish (skeletons, LastUpdated, Copy, a11y)
+  - f2f8a5c  # Live hashrate sparklines
 ---
 
 # Spec — Pioneer Hash UI for SV2 daemons

@@ -2,8 +2,16 @@
 title: "Playbook: Adding a UI to the SV2 StartOS packages"
 type: playbook
 created: 2026-05-21
-status: draft
-sources_consulted: 5
+verified: 2026-05-26
+volatility: hot
+status: implemented
+sources:
+  - raw/docs/2026-05-21-sv2-monitoring-http-api.md
+  - raw/docs/2026-05-21-startos-sdk-ui-surfaces.md
+  - raw/articles/2026-05-21-sv2-ui-information-architecture.md
+  - raw/articles/2026-05-21-startos-ui-integration-paths.md
+  - raw/articles/2026-05-21-startos-multi-container-pattern.md
+  - raw/repos/2026-05-21-stratum-mining-sv2-ui-upstream.md
 ---
 
 # Playbook — Adding a UI to the SV2 StartOS packages

@@ -3,6 +3,8 @@ title: SV2 monitoring HTTP API (sv2-apps@v0.4.0)
 type: docs
 source: local sv2-apps submodule + stratum-mining/sv2-ui repo
 date: 2026-05-21
+verified: 2026-05-26
+volatility: hot
 quality: 5
 confidence: high
 tags: [sv2, monitoring, openapi, axum, prometheus]

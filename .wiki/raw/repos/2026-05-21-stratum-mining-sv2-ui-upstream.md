@@ -3,6 +3,8 @@ title: stratum-mining/sv2-ui — upstream's own TypeScript UI
 type: repos
 source: github.com/stratum-mining/sv2-ui
 date: 2026-05-21
+verified: 2026-05-26
+volatility: hot
 quality: 4
 confidence: high
 tags: [sv2, ui, typescript, upstream]

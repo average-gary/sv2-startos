@@ -3,6 +3,8 @@ title: StartOS multi-container packaging — three archetypes
 type: articles
 source: review of 5 reference packages on github.com/Start9Labs
 date: 2026-05-21
+verified: 2026-05-26
+volatility: hot
 quality: 5
 confidence: high
 tags: [startos, packaging, multi-container, btcpayserver, mempool]

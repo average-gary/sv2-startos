@@ -1,0 +1,77 @@
+{
+  "scan_id": "2026-05-26T00:00:00Z",
+  "wiki": "sv2-startos (.wiki, local)",
+  "completed_at": "2026-05-26T00:00:00Z",
+  "passes": ["staleness", "quality"],
+  "threshold": 70,
+  "wiki_shape": "raw+output (no compiled wiki/ layer)",
+  "post_sweep": true,
+  "summary": {
+    "articles_scanned": 8,
+    "stale_count": 0,
+    "low_quality_count": 0,
+    "avg_staleness": 95,
+    "avg_quality": 88,
+    "worst_staleness": {
+      "article": "raw/articles/2026-05-21-sv2-ui-information-architecture.md",
+      "score": 95
+    },
+    "worst_quality": {
+      "article": "raw/repos/2026-05-21-stratum-mining-sv2-ui-upstream.md",
+      "score": 80
+    }
+  },
+  "articles": {
+    "raw/repos/2026-05-21-stratum-mining-sv2-ui-upstream.md": {
+      "staleness": { "score": 95, "factors": { "source_freshness": 22, "verification": 25, "compilation": 22, "integrity": 25 } },
+      "quality": { "score": 80, "dimensions": { "depth": 4, "source_quality": 4, "coherence": 4, "utility": 4 }, "flags": ["single-source"] },
+      "tier": 1,
+      "volatility": "hot"
+    },
+    "raw/articles/2026-05-21-sv2-ui-information-architecture.md": {
+      "staleness": { "score": 95, "factors": { "source_freshness": 22, "verification": 25, "compilation": 22, "integrity": 25 } },
+      "quality": { "score": 84, "dimensions": { "depth": 5, "source_quality": 4, "coherence": 4, "utility": 4 }, "flags": [] },
+      "tier": 1,
+      "volatility": "hot"
+    },
+    "raw/articles/2026-05-21-startos-ui-integration-paths.md": {
+      "staleness": { "score": 95, "factors": { "source_freshness": 22, "verification": 25, "compilation": 22, "integrity": 25 } },
+      "quality": { "score": 92, "dimensions": { "depth": 5, "source_quality": 5, "coherence": 5, "utility": 5 }, "flags": [] },
+      "tier": 1,
+      "volatility": "hot"
+    },
+    "raw/articles/2026-05-21-startos-multi-container-pattern.md": {
+      "staleness": { "score": 95, "factors": { "source_freshness": 22, "verification": 25, "compilation": 22, "integrity": 25 } },
+      "quality": { "score": 88, "dimensions": { "depth": 4, "source_quality": 5, "coherence": 5, "utility": 4 }, "flags": [] },
+      "tier": 1,
+      "volatility": "hot"
+    },
+    "raw/docs/2026-05-21-sv2-monitoring-http-api.md": {
+      "staleness": { "score": 95, "factors": { "source_freshness": 22, "verification": 25, "compilation": 22, "integrity": 25 } },
+      "quality": { "score": 92, "dimensions": { "depth": 5, "source_quality": 5, "coherence": 5, "utility": 5 }, "flags": [] },
+      "tier": 1,
+      "volatility": "hot"
+    },
+    "raw/docs/2026-05-21-startos-sdk-ui-surfaces.md": {
+      "staleness": { "score": 95, "factors": { "source_freshness": 22, "verification": 25, "compilation": 22, "integrity": 25 } },
+      "quality": { "score": 92, "dimensions": { "depth": 5, "source_quality": 5, "coherence": 5, "utility": 5 }, "flags": [] },
+      "tier": 1,
+      "volatility": "hot"
+    },
+    "output/plan-pioneer-hash-sv2-ui-2026-05-21.md": {
+      "staleness": { "score": 95, "factors": { "source_freshness": 22, "verification": 25, "compilation": 22, "integrity": 25 } },
+      "quality": { "score": 92, "dimensions": { "depth": 5, "source_quality": 5, "coherence": 5, "utility": 5 }, "flags": [] },
+      "tier": 1,
+      "volatility": "hot",
+      "status": "implemented",
+      "implemented-in": ["1b1d9a6", "6594ac5", "5076981", "4fe3ffd", "7142374", "b2e2baf", "b95f2e1", "e4c45ed", "de2b8c1", "f2f8a5c"]
+    },
+    "output/playbook-startos-package-ui-2026-05-21.md": {
+      "staleness": { "score": 95, "factors": { "source_freshness": 22, "verification": 25, "compilation": 22, "integrity": 25 } },
+      "quality": { "score": 88, "dimensions": { "depth": 5, "source_quality": 5, "coherence": 4, "utility": 4 }, "flags": [] },
+      "tier": 2,
+      "volatility": "hot",
+      "status": "implemented"
+    }
+  }
+}

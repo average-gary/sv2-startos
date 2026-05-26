@@ -3,6 +3,8 @@ title: StartOS UI integration paths — comparison
 type: articles
 source: synthesis from BTCPay/Mempool patterns + start-sdk Daemons.d.ts + sv2-apps Cargo deps
 date: 2026-05-21
+verified: 2026-05-26
+volatility: hot
 quality: 5
 confidence: high
 tags: [startos, ui, integration, sidecar, embedded]

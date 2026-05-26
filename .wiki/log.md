@@ -1,5 +1,17 @@
 # Research log
 
+## [2026-05-26] librarian | scanned 8 documents, 1 below threshold (cosmetic), 0 low-quality
+- Wiki has no compiled wiki/ layer; scan adapted to raw/ + output/
+- Avg staleness 70, avg quality 88. See .librarian/REPORT.md
+- Recommendations: bump volatility hot, set verified:2026-05-26 on executed plan, tighten playbook frontmatter
+
+## [2026-05-26] sweep | applied librarian recommendations
+- volatility: hot on all 8 docs; verified: 2026-05-26 on all
+- Plan + playbook now carry status: implemented; plan lists 10 implementing commits
+- Playbook frontmatter gains a real sources: list
+- _index.md updated; question-of-record marked answered
+- Re-scan: avg staleness 95, avg quality 88, 0 stale, 0 low-quality
+
 ## [2026-05-21] init
 Local wiki created for sv2-startos. Question of record: "How do we add a UI to these StartOS sv2 packages?"
 
