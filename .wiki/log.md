@@ -3,6 +3,15 @@
 ## [2026-05-21] init
 Local wiki created for sv2-startos. Question of record: "How do we add a UI to these StartOS sv2 packages?"
 
+## [2026-05-25] execute | Hashrate timeseries (Phase 6 follow-up)
+- TimeseriesProvider context above the router so the ring buffer survives navigation
+- 60-sample ring (5 minutes at 5s tick) keyed by metric name
+- Hand-rolled SVG Sparkline (5 tones, area fill, endpoint dot, no chart library)
+- MetricCard accepts trend + trendTone props
+- Pool: pool.hashrate + pool.miners. Translator: translator.hashrate + translator.upstream. JDC: jdc.hashrate + jdc.upstream
+- Bundle +~3 KB gzipped. Zero new deps.
+- All three .s9pks rebuilt: sv2-pool 111 MB, sv2-tproxy 111 MB, sv2-jd-client 112 MB
+
 ## [2026-05-25] execute | Pioneer Hash UI v0 — Phase 5 polish complete
 - Brand kit: Field Station system shipped (Fraunces + JetBrains Mono, beacon-amber, chart-paper grid). See ui/BRAND.md
 - ErrorBoundary at route level with Field-Station-styled fallback
