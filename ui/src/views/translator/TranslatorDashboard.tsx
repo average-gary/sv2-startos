@@ -11,12 +11,18 @@ import {
   formatPercent,
   formatUptime,
 } from '~/lib/format'
+import { useRecordSample, useTimeseries } from '~/lib/timeseries'
 import type { Sv1ClientInfo } from '~/api/client'
 
 export function TranslatorDashboard() {
   const global = useGlobal()
   const server = useServer()
   const sv1 = useSv1Clients(0, 50)
+
+  useRecordSample('translator.hashrate', global.data?.sv1_clients?.total_hashrate)
+  useRecordSample('translator.upstream', server.data?.total_hashrate)
+  const hashrateTrend = useTimeseries('translator.hashrate')
+  const upstreamTrend = useTimeseries('translator.upstream')
 
   // Aggregate share counts + reject reasons across all SV1 miners.
   const totals = (() => {
@@ -47,6 +53,8 @@ export function TranslatorDashboard() {
               <MetricCard
                 label="Total hashrate"
                 value={formatHashrate(g.sv1_clients?.total_hashrate)}
+                trend={hashrateTrend}
+                trendTone="primary"
               />
               <MetricCard
                 label="SV1 miners"
@@ -84,6 +92,8 @@ export function TranslatorDashboard() {
               <MetricCard
                 label="Upstream hashrate"
                 value={formatHashrate(s.total_hashrate)}
+                trend={upstreamTrend}
+                trendTone="success"
               />
             </div>
           )}

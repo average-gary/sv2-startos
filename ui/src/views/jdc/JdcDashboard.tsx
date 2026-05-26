@@ -8,6 +8,7 @@ import { StatusPill } from '~/views/shared/StatusPill'
 import { CopyableValue } from '~/views/shared/CopyButton'
 import { MetricGridSkeleton, TableSkeleton } from '~/views/shared/Skeleton'
 import { formatHashrate, formatNumber, formatUptime } from '~/lib/format'
+import { useRecordSample, useTimeseries } from '~/lib/timeseries'
 import type { Sv2ClientMetadata } from '~/api/client'
 
 const MODE_TONE: Record<string, 'success' | 'warning' | 'info'> = {
@@ -30,6 +31,11 @@ export function JdcDashboard() {
   const server = useServer()
   const clients = useClients(0, 50)
   const config = useConfig()
+
+  useRecordSample('jdc.hashrate', global.data?.sv2_clients?.total_hashrate)
+  useRecordSample('jdc.upstream', server.data?.total_hashrate)
+  const hashrateTrend = useTimeseries('jdc.hashrate')
+  const upstreamTrend = useTimeseries('jdc.upstream')
 
   const cfg = config.data?.raw as
     | {
@@ -86,6 +92,8 @@ export function JdcDashboard() {
                 label="Local hashrate"
                 value={formatHashrate(g.sv2_clients?.total_hashrate)}
                 hint="Pushed upstream"
+                trend={hashrateTrend}
+                trendTone="primary"
               />
               <MetricCard
                 label="Downstream miners"
@@ -120,6 +128,8 @@ export function JdcDashboard() {
                 <MetricCard
                   label="Upstream hashrate"
                   value={formatHashrate(s.total_hashrate)}
+                  trend={upstreamTrend}
+                  trendTone="success"
                 />
               </div>
             )}

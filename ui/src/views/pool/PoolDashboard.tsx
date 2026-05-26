@@ -7,12 +7,19 @@ import { LastUpdated } from '~/views/shared/LastUpdated'
 import { CopyableValue } from '~/views/shared/CopyButton'
 import { MetricGridSkeleton, TableSkeleton } from '~/views/shared/Skeleton'
 import { formatHashrate, formatNumber, formatUptime } from '~/lib/format'
+import { useRecordSample, useTimeseries } from '~/lib/timeseries'
 import type { Sv2ClientMetadata } from '~/api/client'
 
 export function PoolDashboard() {
   const global = useGlobal()
   const clients = useClients(0, 50)
   const config = useConfig()
+
+  // Record hashrate into the live timeseries buffer (5 min ring).
+  useRecordSample('pool.hashrate', global.data?.sv2_clients?.total_hashrate)
+  useRecordSample('pool.miners', global.data?.sv2_clients?.count)
+  const hashrateTrend = useTimeseries('pool.hashrate')
+  const minersTrend = useTimeseries('pool.miners')
 
   const cfg = config.data?.raw as
     | {
@@ -28,7 +35,7 @@ export function PoolDashboard() {
       <section>
         <SectionHeader
           title="Overview"
-          subtitle="Live pool stats"
+          subtitle="Live pool stats — trend over last 5 minutes"
           index="01"
           right={<LastUpdated query={global} />}
         />
@@ -38,10 +45,14 @@ export function PoolDashboard() {
               <MetricCard
                 label="Pool hashrate"
                 value={formatHashrate(g.sv2_clients?.total_hashrate)}
+                trend={hashrateTrend}
+                trendTone="primary"
               />
               <MetricCard
                 label="Connected miners"
                 value={formatNumber(g.sv2_clients?.count ?? 0)}
+                trend={minersTrend}
+                trendTone="success"
               />
               <MetricCard label="Uptime" value={formatUptime(g.uptime_secs)} />
               <MetricCard label="Service" value="Pool" hint="POOL_SV2 0.3.0" />
