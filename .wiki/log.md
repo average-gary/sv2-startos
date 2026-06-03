@@ -1,5 +1,23 @@
 # Research log
 
+## [2026-06-03] design | SV2 + Iroh StartOS bundle plan
+- Decision recorded after thesis: ship anyway with three first-class connectivity modes — TCP+mDNS, TCP+Tor, Iroh
+- Iroh on-by-default for sv2-pool inbound; operator-opt-in for tproxy/jdc upstream dials
+- `sv2://addr?public_key=...` URI minting (lndconnect pattern) ships regardless of Iroh — biggest UX win, transport-independent
+- SV2-over-Tor latency measurement is a deliverable in its own right (no published numbers exist)
+- 7-phase plan: rebase fork → config schema → interfaces.ts NodeId surfacing → Configure action UX → health/metrics → Tor measurement → default-on release
+- Captured user corrections to thesis: mDNS coexists with Iroh; SV2-over-Tor is unmeasured baseline
+- Output: [[output/plan-sv2-iroh-startos-2026-06-03]]; thesis updated with corrections section
+
+## [2026-06-03] research --plan --local --mode thesis (--deep)
+- Thesis: "average-gary/sv2-apps@feat/iroh-transport is an ideal candidate for StartOS deployment because Iroh enables easy user setup and management"
+- Mode: thesis-deep-plan, 5 parallel paths, 26 raw sources ingested
+- Verdict: **partially-supported / mixed**, confidence **medium**
+- Falsifiers status: 1 falsified, 2 partially falsified, 2 survive as material risks
+- Headline: fork is fresh and additive, but "ideal" overreaches. Zero non-fork Iroh peers in SV2 (firmware, pools, RFC #1935 has 0 maintainer responses in 8 months); StartOS counterfactual is "install Tor + 2 clicks" not multi-step port-forward chain; default tickets leak interface IPs; symmetric-NAT mitigation deferred past v1.0
+- Recommendation: ship StartOS package on upstream `main` + add `sv2://` URI minting (lndconnect pattern). Track `feat/iroh-transport` as experimental sidebar
+- Outputs: [[theses/iroh-sv2-startos-ideal-candidate]], [[output/thesis-iroh-sv2-startos-2026-06-03]]
+
 ## [2026-05-26] librarian | scanned 8 documents, 1 below threshold (cosmetic), 0 low-quality
 - Wiki has no compiled wiki/ layer; scan adapted to raw/ + output/
 - Avg staleness 70, avg quality 88. See .librarian/REPORT.md
