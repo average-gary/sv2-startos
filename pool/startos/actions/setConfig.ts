@@ -271,6 +271,27 @@ export const setConfig = sdk.Action.withInput(
   },
 
   async ({ effects, input }) => {
+    // Preserve any existing [iroh] block — this Configure action doesn't yet
+    // expose iroh fields in its form, but a prior install or future form rev
+    // may have populated them. Fall back to plan defaults (Iroh on for pool
+    // inbound, sovereignty-friendly discovery toggles).
+    const prior = await configToml.read().const(effects)
+    const irohDefaults = {
+      enabled: true,
+      listen_address: '0.0.0.0:34256',
+      secret_key_path: '/data/iroh/pool.secret',
+      relay_url: undefined,
+      discovery_relay_enable: true,
+      discovery_pkarr_pub_enable: false,
+      discovery_pkarr_res_enable: true,
+      discovery_dht_enable: false,
+      discovery_n0_enable: false,
+      max_idle_timeout_secs: 60,
+      keep_alive_interval_secs: 30,
+      per_request_timeout_secs: 30,
+    }
+    const iroh = prior?.iroh ?? irohDefaults
+
     const config = {
       authority_public_key: input.authority_public_key,
       authority_secret_key: input.authority_secret_key,
@@ -308,6 +329,7 @@ export const setConfig = sdk.Action.withInput(
         address: input.monitoring_address || '',
         cache_refresh_secs: input.monitoring_cache_refresh_secs ?? 15,
       },
+      iroh,
     }
 
     await configToml.write(effects, config)

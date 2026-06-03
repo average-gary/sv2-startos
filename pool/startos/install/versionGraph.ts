@@ -69,6 +69,24 @@ export const versionGraph = VersionGraph.of({
         address: '127.0.0.1:9090',
         cache_refresh_secs: 15,
       },
+
+      // Iroh transport - enabled by default on the pool inbound side per design plan §7.
+      // Discovery defaults honor StartOS sovereignty: relay on, pkarr-resolve on,
+      // pkarr-publish/dht/n0 off. Operators can flip these via the Configure action.
+      iroh: {
+        enabled: true,
+        listen_address: '0.0.0.0:34256',
+        secret_key_path: '/data/iroh/pool.secret',
+        relay_url: undefined,
+        discovery_relay_enable: true,
+        discovery_pkarr_pub_enable: false,
+        discovery_pkarr_res_enable: true,
+        discovery_dht_enable: false,
+        discovery_n0_enable: false,
+        max_idle_timeout_secs: 60,
+        keep_alive_interval_secs: 30,
+        per_request_timeout_secs: 30,
+      },
     })
 
     // Create configuration task for user

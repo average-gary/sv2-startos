@@ -11,9 +11,13 @@ WORKDIR /build
 # Copy the sv2-apps source
 COPY sv2-apps ./sv2-apps
 
+# Cargo features to enable. Default ships with iroh-transport so the [iroh]
+# config block is honored. Pass --build-arg CARGO_FEATURES="" to disable.
+ARG CARGO_FEATURES="iroh-transport"
+
 # Build the pool from the workspace
 WORKDIR /build/sv2-apps/pool-apps
-RUN cargo build --release --package pool_sv2
+RUN cargo build --release --package pool_sv2 --features "${CARGO_FEATURES}"
 
 # Stage 2: Create minimal runtime image
 FROM debian:bookworm-slim
