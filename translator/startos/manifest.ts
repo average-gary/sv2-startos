@@ -10,7 +10,7 @@ export const manifest = setupManifest({
   id: 'sv2-tproxy',
   title: 'Pioneer Hash TProxy',
   license: 'MIT OR Apache-2.0',
-  wrapperRepo: 'https://github.com/PioneerHash/sv2-translator-startos',
+  wrapperRepo: 'https://github.com/average-gary/sv2-startos',
   upstreamRepo: 'https://github.com/stratum-mining/sv2-apps',
   supportSite: 'https://stratumprotocol.org',
   marketingSite: 'https://stratumprotocol.org',
