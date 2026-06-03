@@ -48,6 +48,45 @@ function renderConfig(config: TranslatorConfig): string {
     lines.push(`address = ${tomlString(u.address)}`)
     lines.push(`port = ${u.port}`)
     lines.push(`authority_pubkey = ${tomlString(u.authority_pubkey)}`)
+    if (u.iroh_node_id && u.iroh_node_id.length > 0) {
+      lines.push(`iroh_node_id = ${tomlString(u.iroh_node_id)}`)
+    }
+    if (u.iroh_relay_url && u.iroh_relay_url.length > 0) {
+      lines.push(`iroh_relay_url = ${tomlString(u.iroh_relay_url)}`)
+    }
+    if (u.prefer_transport && u.prefer_transport.length > 0) {
+      lines.push(`prefer_transport = ${tomlString(u.prefer_transport)}`)
+    }
+    lines.push('')
+  }
+
+  // Optional [iroh] block — emitted only when configured. Without the
+  // iroh-transport feature flag in the binary, this section is silently
+  // ignored at runtime.
+  if (config.iroh) {
+    const i = config.iroh
+    lines.push('[iroh]')
+    lines.push(`listen_address = ${tomlString(i.listen_address)}`)
+    if (i.secret_key_path && i.secret_key_path.length > 0) {
+      lines.push(`secret_key_path = ${tomlString(i.secret_key_path)}`)
+    }
+    if (i.relay_url !== undefined) {
+      lines.push(`relay_url = ${tomlString(i.relay_url)}`)
+    }
+    lines.push(`discovery_relay_enable = ${i.discovery_relay_enable}`)
+    lines.push(`discovery_pkarr_pub_enable = ${i.discovery_pkarr_pub_enable}`)
+    lines.push(`discovery_pkarr_res_enable = ${i.discovery_pkarr_res_enable}`)
+    lines.push(`discovery_dht_enable = ${i.discovery_dht_enable}`)
+    lines.push(`discovery_n0_enable = ${i.discovery_n0_enable}`)
+    if (i.max_idle_timeout_secs !== undefined) {
+      lines.push(`max_idle_timeout_secs = ${i.max_idle_timeout_secs}`)
+    }
+    if (i.keep_alive_interval_secs !== undefined) {
+      lines.push(`keep_alive_interval_secs = ${i.keep_alive_interval_secs}`)
+    }
+    if (i.per_request_timeout_secs !== undefined) {
+      lines.push(`per_request_timeout_secs = ${i.per_request_timeout_secs}`)
+    }
     lines.push('')
   }
 

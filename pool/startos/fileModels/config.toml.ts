@@ -32,6 +32,38 @@ const monitoring = object({
   cache_refresh_secs: number,
 })
 
+// [iroh] block — canonical schema mirrors the fork's commented-out example in
+// sv2-apps/pool-apps/pool/config-examples/mainnet/pool-config-bitcoin-core-ipc-example.toml
+// Discovery defaults honor StartOS sovereignty (see plan §7):
+//   relay enabled, pkarr_resolve enabled, pkarr_publish/dht/n0 disabled.
+const iroh = object({
+  enabled: boolean,
+  listen_address: string,
+  secret_key_path: string,
+  relay_url: string.optional().onMismatch(undefined),
+  discovery_relay_enable: boolean,
+  discovery_pkarr_pub_enable: boolean,
+  discovery_pkarr_res_enable: boolean,
+  discovery_dht_enable: boolean,
+  discovery_n0_enable: boolean,
+  max_idle_timeout_secs: number,
+  keep_alive_interval_secs: number,
+  per_request_timeout_secs: number,
+}).onMismatch({
+  enabled: false,
+  listen_address: '0.0.0.0:34256',
+  secret_key_path: '/data/iroh/pool.secret',
+  relay_url: undefined,
+  discovery_relay_enable: true,
+  discovery_pkarr_pub_enable: false,
+  discovery_pkarr_res_enable: true,
+  discovery_dht_enable: false,
+  discovery_n0_enable: false,
+  max_idle_timeout_secs: 60,
+  keep_alive_interval_secs: 30,
+  per_request_timeout_secs: 30,
+})
+
 const shape = object({
   authority_public_key: string,
   authority_secret_key: string,
@@ -48,6 +80,7 @@ const shape = object({
   template_provider: templateProvider,
   jds,
   monitoring,
+  iroh,
 })
 
 export const configToml = FileHelper.toml(

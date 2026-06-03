@@ -22,16 +22,29 @@ export const main = sdk.setupMain(async ({ effects, started }) => {
   }
 
   // Render the upstream array. SOLOMINING uses an empty list.
+  // Optional iroh fields are emitted only when set, keeping output backward-compatible.
   const upstreamsToml = config.upstreams
-    .map(
-      (u) => `[[upstreams]]
+    .map((u) => {
+      const irohPoolLine = u.iroh_pool_node_id
+        ? `iroh_pool_node_id = "${u.iroh_pool_node_id}"\n`
+        : ''
+      const irohJdsLine = u.iroh_jds_node_id
+        ? `iroh_jds_node_id = "${u.iroh_jds_node_id}"\n`
+        : ''
+      const irohRelayLine = u.iroh_relay_url
+        ? `iroh_relay_url = "${u.iroh_relay_url}"\n`
+        : ''
+      const preferLine = u.prefer_transport
+        ? `prefer_transport = "${u.prefer_transport}"\n`
+        : ''
+      return `[[upstreams]]
 authority_pubkey = "${u.authority_pubkey}"
 pool_address = "${u.pool_address}"
 pool_port = ${u.pool_port}
 jds_address = "${u.jds_address}"
 jds_port = ${u.jds_port}
-`,
-    )
+${irohPoolLine}${irohJdsLine}${irohRelayLine}${preferLine}`
+    })
     .join('\n')
 
   // Render the template_provider_type nested table.
@@ -50,6 +63,48 @@ min_interval = ${tp.min_interval}
     tpSection = `[template_provider_type.Sv2Tp]
 address = "${tp.address}"
 ${pubkeyLine}`
+  }
+
+  // Optional [template_provider_iroh] block (additive). Emit only if user provided
+  // an iroh_node_id; the JDC binary ignores the section when not built with the
+  // iroh-transport feature.
+  let tpIrohSection = ''
+  if (
+    config.template_provider_iroh &&
+    config.template_provider_iroh.iroh_node_id
+  ) {
+    const tpi = config.template_provider_iroh
+    const tpiRelay = tpi.iroh_relay_url
+      ? `iroh_relay_url = "${tpi.iroh_relay_url}"\n`
+      : ''
+    const tpiPrefer = tpi.prefer_transport
+      ? `prefer_transport = "${tpi.prefer_transport}"\n`
+      : ''
+    tpIrohSection = `
+[template_provider_iroh]
+iroh_node_id = "${tpi.iroh_node_id}"
+${tpiRelay}${tpiPrefer}`
+  }
+
+  // Optional top-level [iroh] block. Match the canonical schema from the
+  // pool config example. Emitted only when the user explicitly enables iroh.
+  let irohSection = ''
+  if (config.iroh) {
+    const ir = config.iroh
+    irohSection = `
+[iroh]
+listen_address = "${ir.listen_address}"
+secret_key_path = "${ir.secret_key_path}"
+relay_url = "${ir.relay_url}"
+discovery_relay_enable = ${ir.discovery_relay_enable}
+discovery_pkarr_pub_enable = ${ir.discovery_pkarr_pub_enable}
+discovery_pkarr_res_enable = ${ir.discovery_pkarr_res_enable}
+discovery_dht_enable = ${ir.discovery_dht_enable}
+discovery_n0_enable = ${ir.discovery_n0_enable}
+max_idle_timeout_secs = ${ir.max_idle_timeout_secs}
+keep_alive_interval_secs = ${ir.keep_alive_interval_secs}
+per_request_timeout_secs = ${ir.per_request_timeout_secs}
+`
   }
 
   const logFileLine = config.log_file
@@ -85,7 +140,7 @@ supported_extensions = [${supportedExt}]
 required_extensions = [${requiredExt}]
 
 ${monitoringLines}${upstreamsToml}
-${tpSection}`
+${tpSection}${tpIrohSection}${irohSection}`
 
   const initContainer = await sdk.SubContainer.of(
     effects,

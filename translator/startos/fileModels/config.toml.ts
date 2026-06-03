@@ -46,11 +46,34 @@ const shape = object({
   }),
 
   // Upstream SV2 Pool/JDC Connections (array of upstreams for failover support)
+  // Per-upstream iroh fields are optional and opt-in for upstream dials.
   upstreams: array(object({
     address: string,
     port: number,
     authority_pubkey: string,
+    // Optional iroh-transport fields for this upstream (opt-in)
+    iroh_node_id: string.optional().onMismatch(undefined),
+    iroh_relay_url: string.optional().onMismatch(undefined),
+    // 'tcp' or 'iroh' — preferred transport for this upstream
+    prefer_transport: string.optional().onMismatch(undefined),
   })),
+
+  // Optional [iroh] block — when present, translator may dial upstreams via
+  // iroh QUIC (requires iroh-transport feature in the binary). Schema matches
+  // the canonical sv2-apps fork example. StartOS-sovereign discovery defaults.
+  iroh: object({
+    listen_address: string.onMismatch('0.0.0.0:0'),
+    secret_key_path: string.optional().onMismatch(undefined),
+    relay_url: string.optional().onMismatch(undefined),
+    discovery_relay_enable: boolean.onMismatch(true),
+    discovery_pkarr_pub_enable: boolean.onMismatch(false),
+    discovery_pkarr_res_enable: boolean.onMismatch(true),
+    discovery_dht_enable: boolean.onMismatch(false),
+    discovery_n0_enable: boolean.onMismatch(false),
+    max_idle_timeout_secs: number.optional().onMismatch(undefined),
+    keep_alive_interval_secs: number.optional().onMismatch(undefined),
+    per_request_timeout_secs: number.optional().onMismatch(undefined),
+  }).optional().onMismatch(undefined),
 })
 
 export const configToml = FileHelper.toml(

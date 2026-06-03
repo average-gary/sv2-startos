@@ -66,6 +66,27 @@ function renderConfig(config: PoolConfig): string {
     lines.push(`required_extensions = [${config.jds.required_extensions.join(', ')}]`)
   }
 
+  // [iroh] block — emit only when enabled. When disabled, the upstream binary
+  // takes the no-iroh code path even if compiled with the iroh-transport feature.
+  // Schema mirrors fork's pool-config-bitcoin-core-ipc-example.toml.
+  if (config.iroh.enabled) {
+    lines.push('')
+    lines.push('[iroh]')
+    lines.push(`listen_address = ${tomlString(config.iroh.listen_address)}`)
+    lines.push(`secret_key_path = ${tomlString(config.iroh.secret_key_path)}`)
+    if (config.iroh.relay_url && config.iroh.relay_url.length > 0) {
+      lines.push(`relay_url = ${tomlString(config.iroh.relay_url)}`)
+    }
+    lines.push(`discovery_relay_enable = ${config.iroh.discovery_relay_enable}`)
+    lines.push(`discovery_pkarr_pub_enable = ${config.iroh.discovery_pkarr_pub_enable}`)
+    lines.push(`discovery_pkarr_res_enable = ${config.iroh.discovery_pkarr_res_enable}`)
+    lines.push(`discovery_dht_enable = ${config.iroh.discovery_dht_enable}`)
+    lines.push(`discovery_n0_enable = ${config.iroh.discovery_n0_enable}`)
+    lines.push(`max_idle_timeout_secs = ${config.iroh.max_idle_timeout_secs}`)
+    lines.push(`keep_alive_interval_secs = ${config.iroh.keep_alive_interval_secs}`)
+    lines.push(`per_request_timeout_secs = ${config.iroh.per_request_timeout_secs}`)
+  }
+
   return lines.join('\n') + '\n'
 }
 
