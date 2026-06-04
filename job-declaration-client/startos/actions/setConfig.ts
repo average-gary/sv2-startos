@@ -3,6 +3,9 @@ import { configToml } from '../fileModels/config.toml'
 
 const { InputSpec, Value, List } = sdk
 
+const TOR_UNTESTED_WARNING =
+  '⚠️ EXPERIMENTAL: SV2 over Tor is untested. Stratum V2 has not been verified end-to-end over Tor circuits anywhere we know of. Latency, share submission timing, circuit churn, and Noise NX handshake behavior under Tor are all unknown. No guarantees — share loss, stale work, or silent disconnects are plausible. If you paste an .onion address here and it works (or breaks), please file an issue at https://github.com/average-gary/sv2-startos/issues with what worked and what didn\'t.'
+
 const upstreamSpec = InputSpec.of({
   authority_pubkey: Value.text({
     name: 'JDS Authority Public Key',
@@ -17,6 +20,7 @@ const upstreamSpec = InputSpec.of({
     required: true,
     default: '127.0.0.1',
     placeholder: '127.0.0.1',
+    warning: TOR_UNTESTED_WARNING,
   }),
   pool_port: Value.number({
     name: 'Pool Port',
@@ -33,6 +37,7 @@ const upstreamSpec = InputSpec.of({
     required: true,
     default: '127.0.0.1',
     placeholder: '127.0.0.1',
+    warning: TOR_UNTESTED_WARNING,
   }),
   jds_port: Value.number({
     name: 'JDS Port',
@@ -42,6 +47,43 @@ const upstreamSpec = InputSpec.of({
     min: 1,
     max: 65535,
     integer: true,
+  }),
+  // Optional iroh transport metadata (per-upstream, opt-in). When set with
+  // prefer_transport='iroh', the JDC will dial this upstream over iroh instead
+  // of TCP. Honored only when the JDC binary is built with iroh-transport.
+  iroh_pool_node_id: Value.text({
+    name: 'Iroh Pool Node ID',
+    description:
+      'Optional. Iroh node ID of the upstream pool. Leave empty to use TCP only.',
+    required: false,
+    default: '',
+    placeholder: 'k51qzi5uqu5d...',
+  }),
+  iroh_jds_node_id: Value.text({
+    name: 'Iroh JDS Node ID',
+    description:
+      'Optional. Iroh node ID of the upstream Job Declaration Server. Leave empty to use TCP only.',
+    required: false,
+    default: '',
+    placeholder: 'k51qzi5uqu5d...',
+  }),
+  iroh_relay_url: Value.text({
+    name: 'Iroh Relay URL',
+    description:
+      'Optional. Iroh relay URL hint for this upstream. Leave empty to fall back to the global iroh relay or default discovery.',
+    required: false,
+    default: '',
+    placeholder: 'https://relay.example.org',
+  }),
+  prefer_transport: Value.select({
+    name: 'Preferred Transport',
+    description:
+      'Which transport to try first when dialing this upstream. Iroh is honored only if the JDC binary is built with iroh-transport and the iroh node IDs above are populated.',
+    default: 'tcp',
+    values: {
+      tcp: 'TCP (default)',
+      iroh: 'Iroh',
+    },
   }),
 })
 
@@ -147,6 +189,42 @@ export const inputSpec = InputSpec.of({
         required: false,
         default: '',
         placeholder: '9bwHCYnjhbHm4AS3pWg9MtAH83mzWohoJJJDELYBqZhDNqszDLc',
+      }),
+    }),
+  ),
+
+  template_provider_iroh: Value.object(
+    {
+      name: 'SV2 Template Provider — Iroh (optional)',
+      description:
+        'Optional. Iroh dial info for the Template Provider. Used only when Template Provider Mode is "SV2 Template Provider" AND the JDC binary is built with iroh-transport. Leave Iroh Node ID empty to keep the TP on TCP.',
+    },
+    InputSpec.of({
+      iroh_node_id: Value.text({
+        name: 'Iroh Node ID',
+        description:
+          'Optional. Iroh node ID of the Template Provider. Leave empty to use TCP only.',
+        required: false,
+        default: '',
+        placeholder: 'k51qzi5uqu5d...',
+      }),
+      iroh_relay_url: Value.text({
+        name: 'Iroh Relay URL',
+        description:
+          'Optional. Iroh relay URL hint for the Template Provider. Leave empty to fall back to the global iroh relay or default discovery.',
+        required: false,
+        default: '',
+        placeholder: 'https://relay.example.org',
+      }),
+      prefer_transport: Value.select({
+        name: 'Preferred Transport',
+        description:
+          'Which transport to try first when dialing the Template Provider. Iroh is honored only if the JDC binary is built with iroh-transport and the Iroh Node ID above is populated.',
+        default: 'tcp',
+        values: {
+          tcp: 'TCP (default)',
+          iroh: 'Iroh',
+        },
       }),
     }),
   ),
@@ -333,6 +411,111 @@ export const inputSpec = InputSpec.of({
       },
     ),
   ),
+
+  // Iroh Transport (additive, optional). Honored only when the JDC binary is
+  // built with the iroh-transport feature; ignored otherwise. Disabled by
+  // default for the JDC since it primarily dials outbound to a pool/JDS.
+  iroh: Value.object(
+    {
+      name: 'Iroh Transport',
+      description:
+        'Optional QUIC-based peer-to-peer transport. Iroh lets the JDC reach an upstream pool/JDS without exposing TCP ports or relying on TCP NAT traversal. Off by default — enable only if your upstream advertises an Iroh node ID.',
+    },
+    InputSpec.of({
+      enabled: Value.toggle({
+        name: 'Enable Iroh',
+        description:
+          'When enabled, the JDC will attempt iroh dials for upstreams whose Preferred Transport is set to Iroh. Requires a build of jd-client with the iroh-transport feature.',
+        default: false,
+      }),
+      listen_address: Value.text({
+        name: 'Iroh Listen Address',
+        description:
+          'host:port the iroh endpoint binds to. Mostly relevant for inbound connections; outbound-only nodes can leave the default.',
+        required: true,
+        default: '0.0.0.0:34266',
+        placeholder: '0.0.0.0:34266',
+      }),
+      relay_url: Value.text({
+        name: 'Iroh Relay URL',
+        description:
+          'Optional. Override the iroh relay used for hole-punching. Leave empty to use defaults. For sovereignty, point at a relay you operate or trust.',
+        required: false,
+        default: '',
+        placeholder: 'https://relay.example.org',
+      }),
+      discovery_relay_enable: Value.toggle({
+        name: 'Discovery: Relay / mDNS',
+        description:
+          'mDNS / local discovery. Safe, default on. Helps peers on the same LAN find each other without leaking to the public internet.',
+        default: true,
+      }),
+      discovery_pkarr_pub_enable: Value.toggle({
+        name: 'Discovery: pkarr publish (LEAKS IPs)',
+        description:
+          'Publish reachability to the public pkarr DNS. WARNING: leaks every interface IP on this host (issue n0/iroh#3074). Off by default — only enable if you understand the privacy implications.',
+        default: false,
+      }),
+      discovery_pkarr_res_enable: Value.toggle({
+        name: 'Discovery: pkarr resolve',
+        description:
+          'Resolve peers via pkarr DNS. Safe (resolution only, no publishing). Default on.',
+        default: true,
+      }),
+      discovery_dht_enable: Value.toggle({
+        name: 'Discovery: Mainline DHT',
+        description:
+          'Mainline DHT participation. Off by default for sovereignty — enabling joins your node to the public DHT swarm.',
+        default: false,
+      }),
+      discovery_n0_enable: Value.toggle({
+        name: 'Discovery: n0 DNS',
+        description:
+          'Use the n0-operated dns.iroh.link discovery service. Off by default for sovereignty — relies on a third-party (number0) name service.',
+        default: false,
+      }),
+      max_idle_timeout_secs: Value.number({
+        name: 'Max Idle Timeout',
+        description:
+          'QUIC max idle timeout. Connections idle longer than this are dropped.',
+        required: true,
+        default: 60,
+        min: 1,
+        max: 3600,
+        integer: true,
+        units: 'seconds',
+      }),
+      keep_alive_interval_secs: Value.number({
+        name: 'Keep-Alive Interval',
+        description:
+          'How often to send QUIC keep-alive frames on otherwise-idle connections.',
+        required: true,
+        default: 30,
+        min: 1,
+        max: 3600,
+        integer: true,
+        units: 'seconds',
+      }),
+      per_request_timeout_secs: Value.number({
+        name: 'Per-Request Timeout',
+        description: 'Timeout for individual iroh request/response exchanges.',
+        required: true,
+        default: 30,
+        min: 1,
+        max: 3600,
+        integer: true,
+        units: 'seconds',
+      }),
+      secret_key_path: Value.text({
+        name: 'Iroh Secret Key Path',
+        description:
+          "Advanced: Ed25519 secret key path. Auto-generated on first start. Don't change unless rotating identity.",
+        required: true,
+        default: '/data/iroh/jdc.secret',
+        placeholder: '/data/iroh/jdc.secret',
+      }),
+    }),
+  ),
 })
 
 export const setConfig = sdk.Action.withInput(
@@ -359,6 +542,28 @@ export const setConfig = sdk.Action.withInput(
     if (!config) {
       return null
     }
+    // Iroh form defaults for existing installs that pre-date the iroh fields.
+    const irohPrior = config.iroh
+    const iroh = {
+      enabled: !!irohPrior,
+      listen_address: irohPrior?.listen_address ?? '0.0.0.0:34266',
+      relay_url: irohPrior?.relay_url ?? '',
+      discovery_relay_enable: irohPrior?.discovery_relay_enable ?? true,
+      discovery_pkarr_pub_enable: irohPrior?.discovery_pkarr_pub_enable ?? false,
+      discovery_pkarr_res_enable: irohPrior?.discovery_pkarr_res_enable ?? true,
+      discovery_dht_enable: irohPrior?.discovery_dht_enable ?? false,
+      discovery_n0_enable: irohPrior?.discovery_n0_enable ?? false,
+      max_idle_timeout_secs: irohPrior?.max_idle_timeout_secs ?? 60,
+      keep_alive_interval_secs: irohPrior?.keep_alive_interval_secs ?? 30,
+      per_request_timeout_secs: irohPrior?.per_request_timeout_secs ?? 30,
+      secret_key_path: irohPrior?.secret_key_path ?? '/data/iroh/jdc.secret',
+    }
+    const tpIrohPrior = config.template_provider_iroh
+    const template_provider_iroh = {
+      iroh_node_id: tpIrohPrior?.iroh_node_id ?? '',
+      iroh_relay_url: tpIrohPrior?.iroh_relay_url ?? '',
+      prefer_transport: tpIrohPrior?.prefer_transport ?? 'tcp',
+    }
     return {
       user_identity: config.user_identity,
       shares_per_minute: config.shares_per_minute,
@@ -368,6 +573,7 @@ export const setConfig = sdk.Action.withInput(
       mode: config.mode,
       template_provider_mode: config.template_provider_mode,
       template_provider_sv2_tp: config.template_provider_sv2_tp,
+      template_provider_iroh,
       template_provider_bitcoin_core_ipc: config.template_provider_bitcoin_core_ipc,
       jdc_signature: config.jdc_signature,
       coinbase_reward_script: config.coinbase_reward_script,
@@ -380,12 +586,52 @@ export const setConfig = sdk.Action.withInput(
       monitoring_enabled: config.monitoring_address.length > 0,
       monitoring_address: config.monitoring_address || '0.0.0.0:9091',
       monitoring_cache_refresh_secs: config.monitoring_cache_refresh_secs,
-      upstreams: config.upstreams,
+      upstreams: config.upstreams.map((u) => ({
+        authority_pubkey: u.authority_pubkey,
+        pool_address: u.pool_address,
+        pool_port: u.pool_port,
+        jds_address: u.jds_address,
+        jds_port: u.jds_port,
+        iroh_pool_node_id: u.iroh_pool_node_id ?? '',
+        iroh_jds_node_id: u.iroh_jds_node_id ?? '',
+        iroh_relay_url: u.iroh_relay_url ?? '',
+        prefer_transport: u.prefer_transport ?? 'tcp',
+      })),
+      iroh,
     }
   },
 
   // the execution function
   async ({ effects, input }) => {
+    // Build the optional [iroh] block from the form. The schema treats the
+    // entire block as optional, so when 'enabled' is false we omit it entirely
+    // (main.ts only emits the section when config.iroh is truthy).
+    const irohBlock = input.iroh.enabled
+      ? {
+          listen_address: input.iroh.listen_address,
+          secret_key_path: input.iroh.secret_key_path,
+          relay_url: input.iroh.relay_url || '',
+          discovery_relay_enable: input.iroh.discovery_relay_enable,
+          discovery_pkarr_pub_enable: input.iroh.discovery_pkarr_pub_enable,
+          discovery_pkarr_res_enable: input.iroh.discovery_pkarr_res_enable,
+          discovery_dht_enable: input.iroh.discovery_dht_enable,
+          discovery_n0_enable: input.iroh.discovery_n0_enable,
+          max_idle_timeout_secs: input.iroh.max_idle_timeout_secs,
+          keep_alive_interval_secs: input.iroh.keep_alive_interval_secs,
+          per_request_timeout_secs: input.iroh.per_request_timeout_secs,
+        }
+      : undefined
+
+    // Build the optional [template_provider_iroh] block. Emit only when the
+    // user supplied an iroh_node_id; main.ts also gates emission on this.
+    const tpIrohBlock = input.template_provider_iroh.iroh_node_id
+      ? {
+          iroh_node_id: input.template_provider_iroh.iroh_node_id,
+          iroh_relay_url: input.template_provider_iroh.iroh_relay_url || '',
+          prefer_transport: input.template_provider_iroh.prefer_transport,
+        }
+      : undefined
+
     const configData = {
       // Fixed values
       listening_address: '0.0.0.0:34265' as const,
@@ -404,6 +650,7 @@ export const setConfig = sdk.Action.withInput(
         address: input.template_provider_sv2_tp.address,
         public_key: input.template_provider_sv2_tp.public_key || '',
       },
+      template_provider_iroh: tpIrohBlock,
       template_provider_bitcoin_core_ipc: {
         network: input.template_provider_bitcoin_core_ipc.network,
         data_dir: input.template_provider_bitcoin_core_ipc.data_dir || '',
@@ -420,7 +667,18 @@ export const setConfig = sdk.Action.withInput(
       required_extensions: input.required_extensions.map((e) => e.value),
       monitoring_address: input.monitoring_enabled ? (input.monitoring_address || '') : '',
       monitoring_cache_refresh_secs: input.monitoring_cache_refresh_secs,
-      upstreams: input.upstreams,
+      upstreams: input.upstreams.map((u) => ({
+        authority_pubkey: u.authority_pubkey,
+        pool_address: u.pool_address,
+        pool_port: u.pool_port,
+        jds_address: u.jds_address,
+        jds_port: u.jds_port,
+        iroh_pool_node_id: u.iroh_pool_node_id || undefined,
+        iroh_jds_node_id: u.iroh_jds_node_id || undefined,
+        iroh_relay_url: u.iroh_relay_url || undefined,
+        prefer_transport: u.prefer_transport,
+      })),
+      iroh: irohBlock,
     }
     await configToml.merge(effects, configData)
   },
