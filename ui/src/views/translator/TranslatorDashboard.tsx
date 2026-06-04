@@ -4,6 +4,7 @@ import { DataTable } from '~/views/shared/DataTable'
 import { SectionHeader } from '~/views/shared/SectionHeader'
 import { QueryGuard } from '~/views/shared/QueryGuard'
 import { LastUpdated } from '~/views/shared/LastUpdated'
+import { IrohCard } from '~/views/shared/IrohCard'
 import { MetricGridSkeleton, TableSkeleton } from '~/views/shared/Skeleton'
 import {
   formatHashrate,
@@ -102,9 +103,18 @@ export function TranslatorDashboard() {
 
       <section>
         <SectionHeader
+          title="Iroh transport"
+          subtitle="NAT-traversing P2P endpoint"
+          index="03"
+        />
+        <IrohCard role="tproxy" />
+      </section>
+
+      <section>
+        <SectionHeader
           title="Share telemetry"
           subtitle="Accept / reject totals across all miners"
-          index="03"
+          index="04"
           right={<LastUpdated query={sv1} />}
         />
         <QueryGuard query={sv1} skeleton={<MetricGridSkeleton count={4} />}>
@@ -148,7 +158,7 @@ export function TranslatorDashboard() {
         <SectionHeader
           title="Connected SV1 miners"
           subtitle="Workers connected to TProxy"
-          index="04"
+          index="05"
           right={<LastUpdated query={sv1} />}
         />
         <QueryGuard query={sv1} skeleton={<TableSkeleton rows={4} columns={6} />}>

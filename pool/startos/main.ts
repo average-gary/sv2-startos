@@ -249,5 +249,54 @@ export const main = sdk.setupMain(async ({ effects, started }) => {
     })
   }
 
+  // Iroh listener health check. Reports 'disabled' when [iroh] is absent or
+  // explicitly disabled. When enabled, scrapes the in-process Prometheus
+  // monitoring endpoint (always bound on 127.0.0.1:9090 inside the
+  // subcontainer) and confirms the binary registered the
+  // `sv2_iroh_active_connections` metric family. Any non-error response
+  // containing that family — even with active count 0 — is sufficient
+  // evidence that the iroh listener is up.
+  daemons.addHealthCheck('iroh-listener', {
+    ready: {
+      display: 'Iroh Transport Listener',
+      fn: async () => {
+        if (!config.iroh || config.iroh.enabled !== true) {
+          return {
+            result: 'disabled' as const,
+            message: 'Iroh transport disabled',
+          }
+        }
+
+        const probe = await subcontainer.exec([
+          'sh',
+          '-c',
+          'curl -fsS http://127.0.0.1:9090/metrics | grep -c "^sv2_iroh_active_connections" || true',
+        ])
+
+        if (probe.exitCode !== 0) {
+          return {
+            result: 'failure' as const,
+            message: `Unable to reach monitoring endpoint at 127.0.0.1:9090/metrics (exit ${probe.exitCode}).`,
+          }
+        }
+
+        const matchCount = parseInt((probe.stdout ?? '').toString().trim(), 10)
+        if (!Number.isFinite(matchCount) || matchCount <= 0) {
+          return {
+            result: 'failure' as const,
+            message:
+              'Monitoring endpoint reachable but no sv2_iroh_* metrics present — iroh listener did not register (binary may be built without the iroh-transport-monitoring feature, or listener failed to start).',
+          }
+        }
+
+        return {
+          result: 'success' as const,
+          message: `Iroh listener registered (role=pool) on ${config.iroh.listen_address}`,
+        }
+      },
+    },
+    requires: ['primary'],
+  })
+
   return daemons
 })

@@ -5,6 +5,7 @@ import { SectionHeader } from '~/views/shared/SectionHeader'
 import { QueryGuard } from '~/views/shared/QueryGuard'
 import { LastUpdated } from '~/views/shared/LastUpdated'
 import { CopyableValue } from '~/views/shared/CopyButton'
+import { IrohCard } from '~/views/shared/IrohCard'
 import { MetricGridSkeleton, TableSkeleton } from '~/views/shared/Skeleton'
 import { formatHashrate, formatNumber, formatUptime } from '~/lib/format'
 import { useRecordSample, useTimeseries } from '~/lib/timeseries'
@@ -103,9 +104,18 @@ export function PoolDashboard() {
 
       <section>
         <SectionHeader
+          title="Iroh transport"
+          subtitle="NAT-traversing P2P endpoint"
+          index="03"
+        />
+        <IrohCard role="pool" authorityPubkey={cfg?.authority_public_key} />
+      </section>
+
+      <section>
+        <SectionHeader
           title="Connected downstreams"
           subtitle="SV2 miners and proxies"
-          index="03"
+          index="04"
           right={<LastUpdated query={clients} />}
         />
         <QueryGuard query={clients} skeleton={<TableSkeleton rows={4} columns={5} />}>

@@ -187,7 +187,20 @@ ${tpSection}${tpIrohSection}${irohSection}`
     'sv2-jd-client-ui-sub',
   )
 
-  return sdk.Daemons.of(effects, started)
+  // Determine whether iroh transport is enabled for this service. The jdc
+  // schema has no explicit `enabled` flag — presence of the [iroh] block is
+  // the signal. We still defensively honour an `enabled === false` override
+  // in case the schema later grows one.
+  const irohEnabled =
+    !!config.iroh &&
+    (config.iroh as { enabled?: boolean }).enabled !== false
+  // Role label used by the iroh-transport metrics in /metrics. JDC dials
+  // upstreams (so it has no listener proper) but iroh-transport still emits
+  // sv2_iroh_active_connections{role="jdc"} for outbound connections, so the
+  // same registry-presence probe applies.
+  const irohRole = 'jdc'
+
+  const daemons = sdk.Daemons.of(effects, started)
     .addDaemon('primary', {
       subcontainer,
       exec: { command: ['jd_client_sv2', '-c', '/data/config.toml'] },
@@ -214,4 +227,59 @@ ${tpSection}${tpIrohSection}${irohSection}`
       },
       requires: ['primary'],
     })
+    .addHealthCheck('iroh-listener', {
+      ready: {
+        display: 'Iroh Transport',
+        fn: async () => {
+          if (!irohEnabled) {
+            return {
+              result: 'disabled' as const,
+              message: 'Iroh transport disabled',
+            }
+          }
+          // Probe the in-process monitoring server's /metrics endpoint and
+          // count lines beginning with `sv2_iroh_active_connections`. Any
+          // non-zero count means the iroh listener registered with the
+          // prometheus registry — value 0 is fine on idle. We pipe to
+          // `|| true` so a curl/grep non-match never trips `set -e`; we then
+          // pattern-match the captured output ourselves.
+          const probe = await subcontainer.exec([
+            'sh',
+            '-c',
+            'curl -fsS http://127.0.0.1:9090/metrics | grep -c "^sv2_iroh_active_connections" || true',
+          ])
+          if (probe.exitCode !== 0) {
+            return {
+              result: 'failure' as const,
+              message: `Failed to probe /metrics (exit ${probe.exitCode ?? 'null'}): ${
+                typeof probe.stderr === 'string'
+                  ? probe.stderr
+                  : probe.stderr.toString()
+              }`.trim(),
+            }
+          }
+          const stdout = (
+            typeof probe.stdout === 'string'
+              ? probe.stdout
+              : probe.stdout.toString()
+          ).trim()
+          const count = Number.parseInt(stdout, 10)
+          if (!Number.isFinite(count) || count <= 0) {
+            return {
+              result: 'failure' as const,
+              message:
+                'Iroh metrics absent from /metrics — listener did not register with the prometheus registry. ' +
+                'Is the binary built with the iroh-transport-monitoring feature?',
+            }
+          }
+          return {
+            result: 'success' as const,
+            message: `Iroh transport up (role=${irohRole}, ${count} sv2_iroh_active_connections series)`,
+          }
+        },
+      },
+      requires: ['primary'],
+    })
+
+  return daemons
 })

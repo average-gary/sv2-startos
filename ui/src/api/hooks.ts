@@ -36,3 +36,6 @@ export const useSv1Clients = (offset = 0, limit = 25) =>
 
 export const useConfig = () =>
   useQuery({ queryKey: ['config'], queryFn: api.config, refetchInterval: 30_000 })
+
+export const useIrohMetrics = () =>
+  useQuery({ queryKey: ['iroh'], queryFn: api.iroh, refetchInterval: REFRESH_MS })

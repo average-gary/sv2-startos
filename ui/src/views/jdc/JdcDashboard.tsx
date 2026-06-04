@@ -6,6 +6,7 @@ import { QueryGuard } from '~/views/shared/QueryGuard'
 import { LastUpdated } from '~/views/shared/LastUpdated'
 import { StatusPill } from '~/views/shared/StatusPill'
 import { CopyableValue } from '~/views/shared/CopyButton'
+import { IrohCard } from '~/views/shared/IrohCard'
 import { MetricGridSkeleton, TableSkeleton } from '~/views/shared/Skeleton'
 import { formatHashrate, formatNumber, formatUptime } from '~/lib/format'
 import { useRecordSample, useTimeseries } from '~/lib/timeseries'
@@ -179,9 +180,18 @@ export function JdcDashboard() {
 
       <section>
         <SectionHeader
+          title="Iroh transport"
+          subtitle="NAT-traversing P2P endpoint"
+          index={mode === 'SOLOMINING' ? '04' : '05'}
+        />
+        <IrohCard role="jdc" />
+      </section>
+
+      <section>
+        <SectionHeader
           title="Downstream miners"
           subtitle="Connected SV2 clients"
-          index={mode === 'SOLOMINING' ? '04' : '05'}
+          index={mode === 'SOLOMINING' ? '05' : '06'}
           right={<LastUpdated query={clients} />}
         />
         <QueryGuard query={clients} skeleton={<TableSkeleton rows={4} columns={4} />}>

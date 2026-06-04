@@ -152,7 +152,11 @@ export const main = sdk.setupMain(async ({ effects, started }) => {
     'sv2-tproxy-ui-sub',
   )
 
-  return sdk.Daemons.of(effects, started)
+  // Translator's [iroh] block has no `enabled` flag — presence of the block
+  // is the opt-in (mirrors how renderConfig and setConfig gate iroh emission).
+  const irohEnabled = !!config.iroh
+
+  const daemons = sdk.Daemons.of(effects, started)
     .addDaemon('primary', {
       subcontainer,
       exec: { command: ['translator_sv2', '-c', '/data/config.toml'] },
@@ -179,4 +183,59 @@ export const main = sdk.setupMain(async ({ effects, started }) => {
       },
       requires: ['primary'],
     })
+    .addHealthCheck('iroh-listener', {
+      ready: {
+        display: 'Iroh Transport Listener',
+        fn: async () => {
+          if (!irohEnabled) {
+            return {
+              result: 'disabled' as const,
+              message: 'Iroh transport disabled',
+            }
+          }
+          // Probe the in-process /metrics endpoint and look for the
+          // sv2_iroh_active_connections family. Its presence (any value,
+          // including 0) confirms the iroh listener registered with the
+          // prometheus registry — i.e. iroh is up. We bury curl's exit
+          // status with `|| true` so a transient miss surfaces via the
+          // grep count rather than a non-zero exit, then inspect both.
+          const probe = await subcontainer.exec([
+            'sh',
+            '-c',
+            'curl -fsS http://127.0.0.1:9090/metrics | grep -c "^sv2_iroh_active_connections" || true',
+          ])
+          const stdout =
+            typeof probe.stdout === 'string'
+              ? probe.stdout
+              : probe.stdout.toString('utf8')
+          const stderr =
+            typeof probe.stderr === 'string'
+              ? probe.stderr
+              : probe.stderr.toString('utf8')
+          const count = parseInt(stdout.trim(), 10)
+          if (Number.isFinite(count) && count > 0) {
+            return {
+              result: 'success' as const,
+              message: 'Iroh listener registered with monitoring registry',
+            }
+          }
+          if (probe.exitCode !== 0) {
+            return {
+              result: 'failure' as const,
+              message: `Could not reach /metrics on 127.0.0.1:9090${
+                stderr ? `: ${stderr.trim()}` : ''
+              }`,
+            }
+          }
+          return {
+            result: 'failure' as const,
+            message:
+              'sv2_iroh_active_connections not exposed on /metrics — iroh listener did not register (binary may be built without the iroh-transport-monitoring feature)',
+          }
+        },
+      },
+      requires: ['primary'],
+    })
+
+  return daemons
 })

@@ -20,6 +20,11 @@
     reverse_proxy localhost:9090
   }
 
+  # Prometheus exposition (sv2_iroh_* families). Same daemon, same port.
+  handle /metrics {
+    reverse_proxy localhost:9090
+  }
+
   # Static SPA with history-API fallback
   handle {
     root * /srv/dist
