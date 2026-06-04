@@ -141,25 +141,25 @@ build-service:
 		fi; \
 	done; \
 	echo "   Packing '$${PACKAGE_ID}.s9pk'..."; \
-	cd $(SERVICE) && BUILD=$$BUILD start-cli s9pk pack -o $${PACKAGE_ID}.s9pk && \
-	manifest=$$(start-cli s9pk inspect $${PACKAGE_ID}.s9pk manifest 2>/dev/null); \
-	size=$$(du -h $${PACKAGE_ID}.s9pk | awk '{print $$1}'); \
-	title=$$(printf '%s' "$$manifest" | jq -r .title 2>/dev/null); \
-	version=$$(printf '%s' "$$manifest" | jq -r .version 2>/dev/null); \
-	arches=$$(printf '%s' "$$manifest" | jq -r '.hardwareRequirements.arch | join(", ")' 2>/dev/null); \
-	sdkv=$$(printf '%s' "$$manifest" | jq -r .sdkVersion 2>/dev/null); \
-	gitHash=$$(printf '%s' "$$manifest" | jq -r .gitHash 2>/dev/null | sed -E 's/(.*-modified)$$/$(RED)\1$(RESET)/'); \
-	printf "\n"; \
-	printf "$(GREEN)✅ Build Complete!$(RESET)\n"; \
-	printf "\n"; \
-	printf "$(RESET)📦 $$title$(RESET)   $(CYAN)v$$version$(RESET)\n"; \
-	printf "───────────────────────────────\n"; \
-	printf " $(CYAN)Filename:$(RESET)   %s\n" "$${PACKAGE_ID}.s9pk"; \
-	printf " $(CYAN)Size:$(RESET)       %s\n" "$$size"; \
-	printf " $(CYAN)Arch:$(RESET)       %s\n" "$$arches"; \
-	printf " $(CYAN)SDK:$(RESET)        %s\n" "$$sdkv"; \
-	printf " $(CYAN)Git:$(RESET)        %s\n" "$$gitHash"; \
-	echo ""
+	cd $(SERVICE) && BUILD=$$BUILD start-cli s9pk pack -o $${PACKAGE_ID}.s9pk \
+	&& manifest=$$(start-cli s9pk inspect $${PACKAGE_ID}.s9pk manifest 2>/dev/null) \
+	&& size=$$(du -h $${PACKAGE_ID}.s9pk | awk '{print $$1}') \
+	&& title=$$(printf '%s' "$$manifest" | jq -r .title 2>/dev/null) \
+	&& version=$$(printf '%s' "$$manifest" | jq -r .version 2>/dev/null) \
+	&& arches=$$(printf '%s' "$$manifest" | jq -r '.hardwareRequirements.arch | join(", ")' 2>/dev/null) \
+	&& sdkv=$$(printf '%s' "$$manifest" | jq -r .sdkVersion 2>/dev/null) \
+	&& gitHash=$$(printf '%s' "$$manifest" | jq -r .gitHash 2>/dev/null | sed -E 's/(.*-modified)$$/$(RED)\1$(RESET)/') \
+	&& { printf "\n"; \
+	     printf "$(GREEN)✅ Build Complete!$(RESET)\n"; \
+	     printf "\n"; \
+	     printf "$(RESET)📦 $$title$(RESET)   $(CYAN)v$$version$(RESET)\n"; \
+	     printf "───────────────────────────────\n"; \
+	     printf " $(CYAN)Filename:$(RESET)   %s\n" "$${PACKAGE_ID}.s9pk"; \
+	     printf " $(CYAN)Size:$(RESET)       %s\n" "$$size"; \
+	     printf " $(CYAN)Arch:$(RESET)       %s\n" "$$arches"; \
+	     printf " $(CYAN)SDK:$(RESET)        %s\n" "$$sdkv"; \
+	     printf " $(CYAN)Git:$(RESET)        %s\n" "$$gitHash"; \
+	     echo ""; }
 
 # Internal target to clean a single service
 .PHONY: clean-service
@@ -187,6 +187,8 @@ install-service:
 # Internal target to build a service for a specific architecture
 .PHONY: build-service-arch
 build-service-arch:
+	@if [ -d sv2-apps ] && [ ! -d $(SERVICE)/sv2-apps ]; then echo "   Copying sv2-apps..."; cp -r sv2-apps $(SERVICE)/; fi
+	@if [ -d ui ] && [ ! -d $(SERVICE)/ui ]; then echo "   Copying ui..."; rsync -a --exclude node_modules --exclude dist ui/ $(SERVICE)/ui/; fi
 	@PACKAGE_ID=$$(awk -F"'" '/id:/ {print $$2}' $(SERVICE)/startos/manifest.ts); \
 	S9PK=$(SERVICE)/$${PACKAGE_ID}_$(ARCH).s9pk; \
 	cd $(SERVICE) && \
@@ -208,25 +210,25 @@ build-service-arch:
 		fi; \
 	done; \
 	echo "   Packing '$${PACKAGE_ID}_$(ARCH).s9pk'..."; \
-	cd $(SERVICE) && BUILD=$(ARCH) start-cli s9pk pack -o $${PACKAGE_ID}_$(ARCH).s9pk && \
-	manifest=$$(start-cli s9pk inspect $${PACKAGE_ID}_$(ARCH).s9pk manifest 2>/dev/null); \
-	size=$$(du -h $${PACKAGE_ID}_$(ARCH).s9pk | awk '{print $$1}'); \
-	title=$$(printf '%s' "$$manifest" | jq -r .title 2>/dev/null); \
-	version=$$(printf '%s' "$$manifest" | jq -r .version 2>/dev/null); \
-	arches=$$(printf '%s' "$$manifest" | jq -r '.hardwareRequirements.arch | join(", ")' 2>/dev/null); \
-	sdkv=$$(printf '%s' "$$manifest" | jq -r .sdkVersion 2>/dev/null); \
-	gitHash=$$(printf '%s' "$$manifest" | jq -r .gitHash 2>/dev/null | sed -E 's/(.*-modified)$$/$(RED)\1$(RESET)/'); \
-	printf "\n"; \
-	printf "$(GREEN)✅ Build Complete!$(RESET)\n"; \
-	printf "\n"; \
-	printf "$(RESET)📦 $$title$(RESET)   $(CYAN)v$$version$(RESET)\n"; \
-	printf "───────────────────────────────\n"; \
-	printf " $(CYAN)Filename:$(RESET)   %s\n" "$${PACKAGE_ID}_$(ARCH).s9pk"; \
-	printf " $(CYAN)Size:$(RESET)       %s\n" "$$size"; \
-	printf " $(CYAN)Arch:$(RESET)       %s\n" "$$arches"; \
-	printf " $(CYAN)SDK:$(RESET)        %s\n" "$$sdkv"; \
-	printf " $(CYAN)Git:$(RESET)        %s\n" "$$gitHash"; \
-	echo ""
+	cd $(SERVICE) && BUILD=$(ARCH) start-cli s9pk pack -o $${PACKAGE_ID}_$(ARCH).s9pk \
+	&& manifest=$$(start-cli s9pk inspect $${PACKAGE_ID}_$(ARCH).s9pk manifest 2>/dev/null) \
+	&& size=$$(du -h $${PACKAGE_ID}_$(ARCH).s9pk | awk '{print $$1}') \
+	&& title=$$(printf '%s' "$$manifest" | jq -r .title 2>/dev/null) \
+	&& version=$$(printf '%s' "$$manifest" | jq -r .version 2>/dev/null) \
+	&& arches=$$(printf '%s' "$$manifest" | jq -r '.hardwareRequirements.arch | join(", ")' 2>/dev/null) \
+	&& sdkv=$$(printf '%s' "$$manifest" | jq -r .sdkVersion 2>/dev/null) \
+	&& gitHash=$$(printf '%s' "$$manifest" | jq -r .gitHash 2>/dev/null | sed -E 's/(.*-modified)$$/$(RED)\1$(RESET)/') \
+	&& { printf "\n"; \
+	     printf "$(GREEN)✅ Build Complete!$(RESET)\n"; \
+	     printf "\n"; \
+	     printf "$(RESET)📦 $$title$(RESET)   $(CYAN)v$$version$(RESET)\n"; \
+	     printf "───────────────────────────────\n"; \
+	     printf " $(CYAN)Filename:$(RESET)   %s\n" "$${PACKAGE_ID}_$(ARCH).s9pk"; \
+	     printf " $(CYAN)Size:$(RESET)       %s\n" "$$size"; \
+	     printf " $(CYAN)Arch:$(RESET)       %s\n" "$$arches"; \
+	     printf " $(CYAN)SDK:$(RESET)        %s\n" "$$sdkv"; \
+	     printf " $(CYAN)Git:$(RESET)        %s\n" "$$gitHash"; \
+	     echo ""; }
 
 # Individual service targets
 $(SERVICES): check-deps
