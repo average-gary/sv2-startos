@@ -50,7 +50,7 @@ const iroh = object({
   keep_alive_interval_secs: number,
   per_request_timeout_secs: number,
 }).onMismatch({
-  enabled: false,
+  enabled: true,
   listen_address: '0.0.0.0:34256',
   secret_key_path: '/data/iroh/pool.secret',
   relay_url: undefined,

@@ -412,21 +412,22 @@ export const inputSpec = InputSpec.of({
     ),
   ),
 
-  // Iroh Transport (additive, optional). Honored only when the JDC binary is
-  // built with the iroh-transport feature; ignored otherwise. Disabled by
-  // default for the JDC since it primarily dials outbound to a pool/JDS.
+  // Iroh Transport (additive). Honored only when the JDC binary is built with
+  // the iroh-transport feature; ignored otherwise. On by default per design
+  // plan §7 — JDC binds an iroh endpoint so it can dial upstreams whose
+  // Preferred Transport is set to Iroh.
   iroh: Value.object(
     {
       name: 'Iroh Transport',
       description:
-        'Optional QUIC-based peer-to-peer transport. Iroh lets the JDC reach an upstream pool/JDS without exposing TCP ports or relying on TCP NAT traversal. Off by default — enable only if your upstream advertises an Iroh node ID.',
+        'QUIC-based peer-to-peer transport. Iroh lets the JDC reach an upstream pool/JDS without exposing TCP ports or relying on TCP NAT traversal. On by default; turn off for a TCP-only JDC.',
     },
     InputSpec.of({
       enabled: Value.toggle({
         name: 'Enable Iroh',
         description:
           'When enabled, the JDC will attempt iroh dials for upstreams whose Preferred Transport is set to Iroh. Requires a build of jd-client with the iroh-transport feature.',
-        default: false,
+        default: true,
       }),
       listen_address: Value.text({
         name: 'Iroh Listen Address',
@@ -545,7 +546,7 @@ export const setConfig = sdk.Action.withInput(
     // Iroh form defaults for existing installs that pre-date the iroh fields.
     const irohPrior = config.iroh
     const iroh = {
-      enabled: !!irohPrior,
+      enabled: true,
       listen_address: irohPrior?.listen_address ?? '0.0.0.0:34266',
       relay_url: irohPrior?.relay_url ?? '',
       discovery_relay_enable: irohPrior?.discovery_relay_enable ?? true,

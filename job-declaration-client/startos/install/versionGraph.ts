@@ -72,6 +72,23 @@ export const versionGraph = VersionGraph.of({
             jds_port: 34264,
           },
         ],
+
+        // Iroh transport - on by default per design plan §7. Block presence
+        // is the toggle (the schema has no `enabled` field). Sovereignty:
+        // relay on, pkarr-resolve on, pkarr-publish/dht/n0 off.
+        iroh: {
+          listen_address: '0.0.0.0:34266',
+          secret_key_path: '/data/iroh/jdc.secret',
+          relay_url: '',
+          discovery_relay_enable: true,
+          discovery_pkarr_pub_enable: false,
+          discovery_pkarr_res_enable: true,
+          discovery_dht_enable: false,
+          discovery_n0_enable: false,
+          max_idle_timeout_secs: 60,
+          keep_alive_interval_secs: 30,
+          per_request_timeout_secs: 30,
+        },
       }),
     ]),
       // critical - needs to be done before start

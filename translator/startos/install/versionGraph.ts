@@ -55,6 +55,24 @@ export const versionGraph = VersionGraph.of({
               '9auqWEzQDVyd2oe1JVGFLMLHZtCo2FFqZwtKA5gd9xbuEu7PH72',
           },
         ],
+
+        // Iroh transport - on by default per design plan §7. Block presence
+        // is the toggle (the schema has no `enabled` field). Sovereignty:
+        // relay on, pkarr-resolve on, pkarr-publish/dht/n0 off. Translator
+        // is mostly outbound, so listen_address binds an ephemeral port.
+        iroh: {
+          listen_address: '0.0.0.0:0',
+          secret_key_path: '/data/iroh/translator.secret',
+          relay_url: undefined,
+          discovery_relay_enable: true,
+          discovery_pkarr_pub_enable: false,
+          discovery_pkarr_res_enable: true,
+          discovery_dht_enable: false,
+          discovery_n0_enable: false,
+          max_idle_timeout_secs: 60,
+          keep_alive_interval_secs: 30,
+          per_request_timeout_secs: 30,
+        },
       }),
     ]),
       // critical - needs to be done before start

@@ -240,19 +240,19 @@ export const inputSpec = InputSpec.of({
     ),
   ),
 
-  // Iroh Transport (optional, off by default for translator — mostly outbound)
+  // Iroh Transport (on by default per design plan §7)
   iroh: Value.object(
     {
       name: 'Iroh Transport',
       description:
-        'Optional iroh QUIC transport. When enabled, the translator can dial upstreams over iroh in addition to TCP. Sovereignty-friendly defaults: local discovery on, public DHT/pkarr publish off.',
+        'Iroh QUIC transport. On by default — the translator can dial upstreams over iroh in addition to TCP. Sovereignty-friendly defaults: local discovery on, public DHT/pkarr publish off.',
     },
     InputSpec.of({
       enabled: Value.toggle({
         name: 'Enable Iroh',
         description:
-          'Enable the iroh QUIC transport for outbound upstream dials. Off by default for the translator (mostly outbound).',
-        default: false,
+          'Enable the iroh QUIC transport for outbound upstream dials. On by default; turn off if you want a TCP-only translator.',
+        default: true,
       }),
       listen_address: Value.text({
         name: 'Iroh Listen Address',
@@ -368,7 +368,7 @@ export const setConfig = sdk.Action.withInput(
     const monitoringAddress = config.monitoring_address
     const priorIroh = config.iroh
     const irohPrefill = {
-      enabled: priorIroh ? true : false,
+      enabled: true,
       listen_address: priorIroh?.listen_address ?? '0.0.0.0:0',
       relay_url: priorIroh?.relay_url ?? null,
       discovery_relay_enable: priorIroh?.discovery_relay_enable ?? true,
