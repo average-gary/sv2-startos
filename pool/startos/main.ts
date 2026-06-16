@@ -1,9 +1,21 @@
 import { configToml } from './fileModels/config.toml'
 import { sdk } from './sdk'
 
-function ipcSocketPath(network: string): string {
-  const base = '/ipc'
-  return network === 'mainnet' ? `${base}/node.sock` : `${base}/${network}/node.sock`
+// The Start9 bitcoin-core-startos package exposes its IPC socket at
+// `/root/.bitcoin/ipc/bitcoin-core.sock`, which we mount read-only at
+// `/ipc/bitcoin-core.sock` inside this subcontainer. The SV2 pool binary
+// hard-codes the socket FILENAME as `node.sock` and looks for it under the
+// configured `data_dir` (mainnet) or `<data_dir>/<network>/node.sock`
+// (testnet4/signet/regtest). We bridge the gap by creating a symlink shim
+// in our own writable volume at `/data/ipc/...` pointing at the mounted
+// socket, then setting `data_dir = /data/ipc` in the rendered TOML.
+const BITCOIND_SOCKET_PATH = '/ipc/bitcoin-core.sock'
+const IPC_SHIM_DIR = '/data/ipc'
+
+function ipcShimPath(network: string): string {
+  return network === 'mainnet'
+    ? `${IPC_SHIM_DIR}/node.sock`
+    : `${IPC_SHIM_DIR}/${network}/node.sock`
 }
 
 function tomlString(s: string): string {
@@ -43,10 +55,12 @@ function renderConfig(config: PoolConfig): string {
 
   if (config.template_provider.mode === 'bitcoin_core_ipc') {
     const ipc = config.template_provider.bitcoin_core_ipc
-    const dataDir = ipc.data_dir && ipc.data_dir.length > 0 ? ipc.data_dir : '/ipc'
+    // data_dir always points at the symlink shim — see BITCOIND_SOCKET_PATH note above.
+    // The user-facing data_dir field is ignored in IPC mode (kept in the schema for
+    // forward-compat and direct-mount workflows); the binary requires node.sock there.
     lines.push('[template_provider_type.BitcoinCoreIpc]')
     lines.push(`network = ${tomlString(ipc.network)}`)
-    lines.push(`data_dir = ${tomlString(dataDir)}`)
+    lines.push(`data_dir = ${tomlString(IPC_SHIM_DIR)}`)
     lines.push(`fee_threshold = ${ipc.fee_threshold}`)
     lines.push(`min_interval = ${ipc.min_interval}`)
   } else {
@@ -111,9 +125,10 @@ export const main = sdk.setupMain(async ({ effects, started }) => {
 
   const configContent = renderConfig(config)
   const useIpc = config.template_provider.mode === 'bitcoin_core_ipc'
-  const expectedSocketPath = useIpc
-    ? ipcSocketPath(config.template_provider.bitcoin_core_ipc.network)
+  const ipcNetwork = useIpc
+    ? config.template_provider.bitcoin_core_ipc.network
     : null
+  const shimSocketPath = ipcNetwork ? ipcShimPath(ipcNetwork) : null
 
   const initContainer = await sdk.SubContainer.of(
     effects,
@@ -132,6 +147,19 @@ export const main = sdk.setupMain(async ({ effects, started }) => {
     '-c',
     `cat > /data/config.toml << 'EOF'\n${configContent}\nEOF`,
   ])
+
+  // Prepare the IPC symlink shim so the SV2 binary's hard-coded `node.sock`
+  // expectation resolves to bitcoin-core-startos's `bitcoin-core.sock`. The
+  // shim lives in our main volume; the actual socket is bind-mounted later.
+  if (useIpc && shimSocketPath) {
+    const shimDir = shimSocketPath.substring(0, shimSocketPath.lastIndexOf('/'))
+    await initContainer.exec([
+      'sh',
+      '-c',
+      `mkdir -p ${shimDir} && ln -sfn ${BITCOIND_SOCKET_PATH} ${shimSocketPath}`,
+    ])
+  }
+
   await initContainer.destroy()
 
   console.info(
@@ -165,18 +193,41 @@ export const main = sdk.setupMain(async ({ effects, started }) => {
     'sv2-pool-sub',
   )
 
-  if (useIpc && expectedSocketPath) {
+  if (useIpc && shimSocketPath) {
     console.info('Validating Bitcoin Core IPC socket availability...')
-    const ipcCheck = await subcontainer.exec(['test', '-S', expectedSocketPath])
 
-    if (ipcCheck.exitCode !== 0) {
+    // First check the upstream-mounted socket directly. If this fails, the
+    // bitcoind dependency is running but does NOT have IPC enabled — the
+    // operator needs to run the "Enable IPC" action on the Bitcoin Core
+    // service.
+    const upstreamCheck = await subcontainer.exec([
+      'test',
+      '-S',
+      BITCOIND_SOCKET_PATH,
+    ])
+    if (upstreamCheck.exitCode !== 0) {
       await subcontainer.destroy()
       throw new Error(
-        `Bitcoin Core IPC socket not found at ${expectedSocketPath}. ` +
-          `Ensure Bitcoin Core has IPC enabled in its configuration.`,
+        `Bitcoin Core IPC socket not exposed at ${BITCOIND_SOCKET_PATH}. ` +
+          `The Bitcoin Core service is running but IPC is not enabled. ` +
+          `Open the Bitcoin Core service in StartOS and run the "Enable IPC" action, ` +
+          `then start the Pool service again.`,
       )
     }
-    console.info('Bitcoin Core IPC socket validated successfully')
+
+    // Then confirm the shim resolves correctly through the symlink we placed
+    // in init. `test -S` follows symlinks, so this also validates the shim.
+    const shimCheck = await subcontainer.exec(['test', '-S', shimSocketPath])
+    if (shimCheck.exitCode !== 0) {
+      await subcontainer.destroy()
+      throw new Error(
+        `IPC symlink shim missing or broken at ${shimSocketPath}. ` +
+          `This is a Pool wrapper bug — please report.`,
+      )
+    }
+    console.info(
+      `Bitcoin Core IPC socket validated (${BITCOIND_SOCKET_PATH} -> ${shimSocketPath})`,
+    )
   }
 
   const uiSubcontainer = await sdk.SubContainer.of(
@@ -221,27 +272,38 @@ export const main = sdk.setupMain(async ({ effects, started }) => {
       requires: ['primary'],
     })
 
-  if (useIpc && expectedSocketPath) {
+  if (useIpc && shimSocketPath) {
     daemons.addHealthCheck('ipc-validation', {
       ready: {
         display: 'Bitcoin Core IPC Connection',
         fn: async () => {
-          const ipcCheck = await subcontainer.exec([
+          const upstreamCheck = await subcontainer.exec([
             'test',
             '-S',
-            expectedSocketPath,
+            BITCOIND_SOCKET_PATH,
           ])
-
-          if (ipcCheck.exitCode !== 0) {
+          if (upstreamCheck.exitCode !== 0) {
             return {
               result: 'failure' as const,
-              message: `Bitcoin Core IPC socket not available at ${expectedSocketPath}. Check that Bitcoin Core has IPC enabled.`,
+              message: `Bitcoin Core IPC socket not exposed at ${BITCOIND_SOCKET_PATH}. Run the "Enable IPC" action on the Bitcoin Core service.`,
+            }
+          }
+
+          const shimCheck = await subcontainer.exec([
+            'test',
+            '-S',
+            shimSocketPath,
+          ])
+          if (shimCheck.exitCode !== 0) {
+            return {
+              result: 'failure' as const,
+              message: `IPC symlink shim missing at ${shimSocketPath}. Restart the Pool service to recreate it.`,
             }
           }
 
           return {
             result: 'success' as const,
-            message: 'Bitcoin Core IPC socket is available',
+            message: `Bitcoin Core IPC socket is available (${BITCOIND_SOCKET_PATH} -> ${shimSocketPath})`,
           }
         },
       },
